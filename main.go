@@ -12,13 +12,13 @@ type RequestResult struct {
 	ResponseTime string
 }
 
-func Hello(wg *sync.WaitGroup, ch *chan int, client *http.Client,
-	req *http.Request, re chan RequestResult) {
-	fmt.Println("aa")
-	time.Sleep(time.Second)
+func Attack(wg *sync.WaitGroup, ch *chan int, client *http.Client, re chan RequestResult) {
 	defer wg.Done()
+	req, _ := http.NewRequest("GET", "http://localhost:8080", nil)
 	rqStart := time.Now()
 	resp, _ := client.Do(req)
+	// defer resp.Body.Close()
+	// fmt.Println(resp)
 	rqEnd := time.Now()
 	re <- RequestResult{
 		StatusCode:   resp.StatusCode,
@@ -28,25 +28,32 @@ func Hello(wg *sync.WaitGroup, ch *chan int, client *http.Client,
 }
 
 func main() {
+
+	// 非同期数
+	Channel := 10
+
+	// Request数
+	RequestCount := 10000
+
 	client := &http.Client{}
-	req, _ := http.NewRequest("GET", "http://localhost:8080", nil)
 
 	// 並行処理するスレッド数を決める
-	ch := make(chan int, 2)
+	ch := make(chan int, Channel)
 
-	//
-	result_ch := make(chan RequestResult, 2000)
-
+	// Responseを溜めておく
+	result_ch := make(chan RequestResult, RequestCount)
+	// _ = time.Now()
+	// ひたすらRequestを投げる
 	wg := sync.WaitGroup{}
-
-	for i := 0; i < 10; i++ {
+	for i := 0; i < RequestCount; i++ {
 		ch <- 1
 		wg.Add(1)
-		go Hello(&wg, &ch, client, req, result_ch)
+		go Attack(&wg, &ch, client, result_ch)
 	}
-
 	wg.Wait()
+	// _ = time.Now()
 
+	// Response結果を取得
 LOOP:
 	for {
 		select {
