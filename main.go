@@ -32,16 +32,16 @@ func Attack(wg *sync.WaitGroup, ch *chan int, client *http.Client, re chan Respo
 
 func main() {
 
-	// MaxIdleConns: DefaultTransportでは100になっている。0にすると無制限
-	http.DefaultTransport.(*http.Transport).MaxIdleConns = 0
-	// MaxIdleConnsPerHost: デフォルト値は2。0にするとデフォルト値が使われる
-	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = 1000
-
 	// 非同期数
-	Channel := 1000
+	Channel := 100
 
 	// Request数
 	RequestCount := 10000
+
+	// MaxIdleConns: DefaultTransportでは100になっている。0にすると無制限
+	http.DefaultTransport.(*http.Transport).MaxIdleConns = 0
+	// MaxIdleConnsPerHost: デフォルト値は2。0にするとデフォルト値が使われる
+	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = Channel
 
 	client := &http.Client{}
 
