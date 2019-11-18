@@ -141,6 +141,16 @@ LOOP:
 	}
 
 	fmt.Printf("\n\n- Summary:\n  - Latency:\n      Total: %v\n      Max:   %v\n      Min:   %v\n      Ave:   %v\n  - Requests/sec: %d\n",
-		requestEnd.Sub(requestStart), maxLatency, minLatency, meanLatency/time.Duration(RequestCount), int(float64(RequestCount)/requestEnd.Sub(requestStart).Seconds()))
+		requestEnd.Sub(requestStart), maxLatency, minLatency,
+		meanLatency/time.Duration(RequestCount),
+		int(float64(RequestCount)/requestEnd.Sub(requestStart).Seconds()))
+
+	fmt.Println("\n- Status code distribution:")
+	for key, value := range countStatusCode {
+		if value != 0 {
+			fmt.Printf("  [%v] %v responses\n", key, value)
+		}
+
+	}
 
 }
