@@ -9,7 +9,12 @@ import (
 
 type Response struct {
 	StatusCode   int
-	ResponseTime string
+	ResponseTime time.Duration
+}
+
+type CountStatusCode struct {
+	StatusCode int
+	Count      int
 }
 
 func ShowDegreeProgression(time string, degree int, maxRequest float32, done float32) {
@@ -41,7 +46,7 @@ func Attack(wg *sync.WaitGroup, ch *chan int, client *http.Client, re chan Respo
 	rqEnd := time.Now()
 	re <- Response{
 		StatusCode:   resp.StatusCode,
-		ResponseTime: rqEnd.Sub(rqStart).String(),
+		ResponseTime: rqEnd.Sub(rqStart),
 	}
 	<-*ch
 }
@@ -87,18 +92,44 @@ func main() {
 	wg.Wait()
 	requestEnd := time.Now()
 	ShowDegreeProgression(requestEnd.Sub(requestStart).String(), 100, float32(RequestCount), float32(RequestCount))
+	fmt.Println("\n")
+
 	// Response結果を取得
-	Responses := make([]Response, RequestCount)
-	i := 0
+	responses := make([]Response, RequestCount)
+	// メジャーなステータスコードを初期値とする
+	// https://www.sakurasaku-labo.jp/blogs/status-code-basic-knowledgess
+	countStatusCode := map[int]int{
+		200: 0, // 成功
+		301: 0, // 恒久的にページが移動している
+		302: 0, // 一時的にページが移動している
+		400: 0, // リクエストが不正
+		401: 0, // 要認証
+		403: 0, // アクセス禁止
+		404: 0, // アクセスができない
+		500: 0, // サーバエラー
+		503: 0, // サービス利用不可
+	}
+	// Latency
+	max := requestEnd.Sub(requestEnd)
+	fmt.Println(max)
 LOOP:
-	for {
+	for i := 0; ; {
 		select {
 		case data := <-result_ch:
-			Responses[i] = data
+			v, ok := countStatusCode[data.StatusCode]
+			if ok {
+				v++
+				countStatusCode[data.StatusCode] = v
+			} else {
+				countStatusCode[data.StatusCode] = 1
+			}
+			responses[i] = data
 			i++
 		default:
 			break LOOP
 		}
 	}
-	fmt.Println(requestEnd.Sub(requestStart).String(), len(Responses))
+	fmt.Println(countStatusCode)
+
+	// fmt.Println(requestEnd.Sub(requestStart).String(), len(Responses))
 }
