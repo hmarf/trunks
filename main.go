@@ -57,7 +57,7 @@ func main() {
 	Channel := 10
 
 	// Request数
-	RequestCount := 100
+	RequestCount := 10000
 
 	// MaxIdleConns: DefaultTransportでは100になっている。0にすると無制限
 	http.DefaultTransport.(*http.Transport).MaxIdleConns = 0
@@ -92,7 +92,6 @@ func main() {
 	wg.Wait()
 	requestEnd := time.Now()
 	ShowDegreeProgression(requestEnd.Sub(requestStart), 100, float32(RequestCount), float32(RequestCount))
-	fmt.Println("\n")
 
 	// Response結果を取得
 	responses := make([]Response, RequestCount)
@@ -141,7 +140,7 @@ LOOP:
 		}
 	}
 
-	fmt.Printf("Latency:\n Total: %v\n Max:   %v\n Min:   %v\n Ave:   %v\n",
-		requestEnd.Sub(requestStart), maxLatency, minLatency, meanLatency/time.Duration(RequestCount))
+	fmt.Printf("\n\n- Summary:\n  - Latency:\n      Total: %v\n      Max:   %v\n      Min:   %v\n      Ave:   %v\n  - Requests/sec: %d\n",
+		requestEnd.Sub(requestStart), maxLatency, minLatency, meanLatency/time.Duration(RequestCount), int(float64(RequestCount)/requestEnd.Sub(requestStart).Seconds()))
 
 }
