@@ -17,10 +17,10 @@ type CountStatusCode struct {
 	Count      int
 }
 
-func ShowDegreeProgression(time string, degree int, maxRequest float32, done float32) {
+func ShowDegreeProgression(time time.Duration, degree int, maxRequest float32, done float32) {
 	progression := 50
 	progressionCount := degree / (100 / progression)
-	fmt.Printf("\r(%v) [", time)
+	fmt.Printf("\r(%02d:%02d:%02d) [", int(time.Hours()), int(time.Minutes())%60, int(time.Seconds())%60)
 	for i := 0; i < progressionCount; i++ {
 		fmt.Printf("#")
 	}
@@ -85,13 +85,13 @@ func main() {
 		degreeP := degree / 5
 		if degreeP != stash {
 			stash = degreeP
-			ShowDegreeProgression(time.Now().Sub(requestStart).String(), degree, float32(RequestCount), float32(i))
+			ShowDegreeProgression(time.Now().Sub(requestStart), degree, float32(RequestCount), float32(i))
 		}
 		go Attack(&wg, &ch, client, result_ch)
 	}
 	wg.Wait()
 	requestEnd := time.Now()
-	ShowDegreeProgression(requestEnd.Sub(requestStart).String(), 100, float32(RequestCount), float32(RequestCount))
+	ShowDegreeProgression(requestEnd.Sub(requestStart), 100, float32(RequestCount), float32(RequestCount))
 	fmt.Println("\n")
 
 	// Response結果を取得
@@ -110,12 +110,20 @@ func main() {
 		503: 0, // サービス利用不可
 	}
 	// Latency
-	max := requestEnd.Sub(requestEnd)
-	fmt.Println(max)
+	maxLatency := requestEnd.Sub(requestEnd)
+	minLatency := requestEnd.Sub(requestStart)
 LOOP:
 	for i := 0; ; {
 		select {
 		case data := <-result_ch:
+			// 待機時間　max, min
+			if data.ResponseTime > maxLatency {
+				maxLatency = data.ResponseTime
+			}
+			if data.ResponseTime < minLatency {
+				minLatency = data.ResponseTime
+			}
+			// Response の Status Code を数える
 			v, ok := countStatusCode[data.StatusCode]
 			if ok {
 				v++
@@ -129,7 +137,7 @@ LOOP:
 			break LOOP
 		}
 	}
-	fmt.Println(countStatusCode)
+	fmt.Println(maxLatency, minLatency)
 
 	// fmt.Println(requestEnd.Sub(requestStart).String(), len(Responses))
 }
