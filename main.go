@@ -12,11 +12,6 @@ type Response struct {
 	ResponseTime time.Duration
 }
 
-type CountStatusCode struct {
-	StatusCode int
-	Count      int
-}
-
 func ShowDegreeProgression(time time.Duration, degree int, maxRequest float32, done float32) {
 	progression := 50
 	progressionCount := degree / (100 / progression)
@@ -150,7 +145,6 @@ LOOP:
 		if value != 0 {
 			fmt.Printf("  [%v] %v responses\n", key, value)
 		}
-
 	}
 
 }
