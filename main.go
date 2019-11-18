@@ -20,7 +20,7 @@ type CountStatusCode struct {
 func ShowDegreeProgression(time time.Duration, degree int, maxRequest float32, done float32) {
 	progression := 50
 	progressionCount := degree / (100 / progression)
-	fmt.Printf("\r(%02d:%02d:%02d) [", int(time.Hours()), int(time.Minutes())%60, int(time.Seconds())%60)
+	fmt.Printf("\r[%02d:%02d:%02d] [", int(time.Hours()), int(time.Minutes())%60, int(time.Seconds())%60)
 	for i := 0; i < progressionCount; i++ {
 		fmt.Printf("#")
 	}
@@ -110,12 +110,14 @@ func main() {
 		503: 0, // サービス利用不可
 	}
 	// Latency
-	maxLatency := requestEnd.Sub(requestEnd)
+	maxLatency := time.Duration(0)
 	minLatency := requestEnd.Sub(requestStart)
+	meanLatency := time.Duration(0)
 LOOP:
 	for i := 0; ; {
 		select {
 		case data := <-result_ch:
+			meanLatency += data.ResponseTime
 			// 待機時間　max, min
 			if data.ResponseTime > maxLatency {
 				maxLatency = data.ResponseTime
@@ -137,7 +139,7 @@ LOOP:
 			break LOOP
 		}
 	}
-	fmt.Println(maxLatency, minLatency)
+	fmt.Println(maxLatency, minLatency, meanLatency/time.Duration(RequestCount))
 
 	// fmt.Println(requestEnd.Sub(requestStart).String(), len(Responses))
 }
