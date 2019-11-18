@@ -54,10 +54,10 @@ func Attack(wg *sync.WaitGroup, ch *chan int, client *http.Client, re chan Respo
 func main() {
 
 	// 非同期数
-	Channel := 100
+	Channel := 10
 
 	// Request数
-	RequestCount := 10000
+	RequestCount := 100
 
 	// MaxIdleConns: DefaultTransportでは100になっている。0にすると無制限
 	http.DefaultTransport.(*http.Transport).MaxIdleConns = 0
@@ -109,6 +109,7 @@ func main() {
 		500: 0, // サーバエラー
 		503: 0, // サービス利用不可
 	}
+
 	// Latency
 	maxLatency := time.Duration(0)
 	minLatency := requestEnd.Sub(requestStart)
@@ -139,7 +140,8 @@ LOOP:
 			break LOOP
 		}
 	}
-	fmt.Println(maxLatency, minLatency, meanLatency/time.Duration(RequestCount))
 
-	// fmt.Println(requestEnd.Sub(requestStart).String(), len(Responses))
+	fmt.Printf("Latency:\n Total: %v\n Max:   %v\n Min:   %v\n Ave:   %v\n",
+		requestEnd.Sub(requestStart), maxLatency, minLatency, meanLatency/time.Duration(RequestCount))
+
 }
