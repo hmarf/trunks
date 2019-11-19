@@ -52,7 +52,7 @@ func main() {
 	Channel := 10
 
 	// Request数
-	RequestCount := 10000
+	RequestCount := 100
 
 	// MaxIdleConns: DefaultTransportでは100になっている。0にすると無制限
 	http.DefaultTransport.(*http.Transport).MaxIdleConns = 0
@@ -135,15 +135,17 @@ LOOP:
 		}
 	}
 
-	fmt.Printf("\n\n- Summary:\n  - Latency:\n      Total: %v\n      Max:   %v\n      Min:   %v\n      Ave:   %v\n  - Requests/sec: %d\n",
+	fmt.Printf("\n\nSucceeded requests:  %v\n", len(responses))
+	fmt.Printf("Failed requests:     %v\n", RequestCount-len(responses))
+	fmt.Printf("Requests/sec:        %d\n", int(float64(RequestCount)/requestEnd.Sub(requestStart).Seconds()))
+	fmt.Printf("Latency:\n   total: %v\n   max:   %v\n   min:   %v\n   ave:   %v\n",
 		requestEnd.Sub(requestStart), maxLatency, minLatency,
 		meanLatency/time.Duration(RequestCount),
-		int(float64(RequestCount)/requestEnd.Sub(requestStart).Seconds()))
-
-	fmt.Println("\n- Status code distribution:")
+	)
+	fmt.Println("Status code distribution:")
 	for key, value := range countStatusCode {
 		if value != 0 {
-			fmt.Printf("  [%v] %v responses\n", key, value)
+			fmt.Printf("    [%v] %v responses\n", key, value)
 		}
 	}
 
