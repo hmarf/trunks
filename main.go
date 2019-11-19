@@ -8,8 +8,9 @@ import (
 )
 
 type Response struct {
-	StatusCode   int
-	ResponseTime time.Duration
+	statusCode    int
+	contextLength int64
+	responseTime  time.Duration
 }
 
 func ShowDegreeProgression(time time.Duration, degree int, maxRequest float32, done float32) {
@@ -38,10 +39,10 @@ func Attack(wg *sync.WaitGroup, ch *chan int, client *http.Client, re chan Respo
 		<-*ch
 		return
 	}
-	// fmt.Println(resp.ContentLength)
 	re <- Response{
-		StatusCode:   resp.StatusCode,
-		ResponseTime: time.Now().Sub(rqStart),
+		statusCode:    resp.StatusCode,
+		contextLength: resp.ContentLength,
+		responseTime:  time.Now().Sub(rqStart),
 	}
 	<-*ch
 }
@@ -85,8 +86,8 @@ func main() {
 		go Attack(&wg, &ch, client, result_ch)
 	}
 	wg.Wait()
-	requestEnd := time.Now()
-	ShowDegreeProgression(requestEnd.Sub(requestStart), 100, float32(RequestCount), float32(RequestCount))
+	requestTime := time.Now().Sub(requestStart)
+	ShowDegreeProgression(requestTime, 100, float32(RequestCount), float32(RequestCount))
 
 	// Response結果を取得
 	responses := make([]Response, RequestCount)
@@ -106,28 +107,32 @@ func main() {
 
 	// Latency
 	maxLatency := time.Duration(0)
-	minLatency := requestEnd.Sub(requestStart)
+	minLatency := requestTime
 	meanLatency := time.Duration(0)
+	// context length
+	var totalContextLength int64
 LOOP:
 	for i := 0; ; {
 		select {
 		case data := <-result_ch:
-			meanLatency += data.ResponseTime
+			meanLatency += data.responseTime
 			// 待機時間　max, min
-			if data.ResponseTime > maxLatency {
-				maxLatency = data.ResponseTime
+			if data.responseTime > maxLatency {
+				maxLatency = data.responseTime
 			}
-			if data.ResponseTime < minLatency {
-				minLatency = data.ResponseTime
+			if data.responseTime < minLatency {
+				minLatency = data.responseTime
 			}
 			// Response の Status Code を数える
-			v, ok := countStatusCode[data.StatusCode]
+			v, ok := countStatusCode[data.statusCode]
 			if ok {
 				v++
-				countStatusCode[data.StatusCode] = v
+				countStatusCode[data.statusCode] = v
 			} else {
-				countStatusCode[data.StatusCode] = 1
+				countStatusCode[data.statusCode] = 1
 			}
+			// ContextLength
+			totalContextLength += data.contextLength
 			responses[i] = data
 			i++
 		default:
@@ -137,15 +142,16 @@ LOOP:
 
 	fmt.Printf("\n\nSucceeded requests:  %v\n", len(responses))
 	fmt.Printf("Failed requests:     %v\n", RequestCount-len(responses))
-	fmt.Printf("Requests/sec:        %d\n", int(float64(RequestCount)/requestEnd.Sub(requestStart).Seconds()))
-	fmt.Println("Status code distribution:")
+	fmt.Printf("Requests/sec:        %d\n", int(float64(RequestCount)/requestTime.Seconds()))
+	fmt.Printf("Total data received: %v\n", totalContextLength)
+	fmt.Printf("\nStatus code:\n")
 	for key, value := range countStatusCode {
 		if value != 0 {
 			fmt.Printf("   [%v] %v responses\n", key, value)
 		}
 	}
-	fmt.Printf("Latency:\n   total: %v\n   max:   %v\n   min:   %v\n   ave:   %v\n",
-		requestEnd.Sub(requestStart), maxLatency, minLatency,
+	fmt.Printf("\nLatency:\n   total: %v\n   max:   %v\n   min:   %v\n   ave:   %v\n",
+		requestTime, maxLatency, minLatency,
 		meanLatency/time.Duration(RequestCount),
 	)
 }
