@@ -8,8 +8,9 @@ import (
 )
 
 type Response struct {
-	StatusCode   int
-	ResponseTime time.Duration
+	statusCode    int
+	contextLength int64
+	responseTime  time.Duration
 }
 
 func ShowDegreeProgression(time time.Duration, degree int, maxRequest float32, done float32) {
@@ -38,10 +39,10 @@ func Attack(wg *sync.WaitGroup, ch *chan int, client *http.Client, re chan Respo
 		<-*ch
 		return
 	}
-	// fmt.Println(resp.ContentLength)
 	re <- Response{
-		StatusCode:   resp.StatusCode,
-		ResponseTime: time.Now().Sub(rqStart),
+		statusCode:    resp.StatusCode,
+		contextLength: resp.ContentLength,
+		responseTime:  time.Now().Sub(rqStart),
 	}
 	<-*ch
 }
@@ -112,21 +113,21 @@ LOOP:
 	for i := 0; ; {
 		select {
 		case data := <-result_ch:
-			meanLatency += data.ResponseTime
+			meanLatency += data.responseTime
 			// 待機時間　max, min
-			if data.ResponseTime > maxLatency {
-				maxLatency = data.ResponseTime
+			if data.responseTime > maxLatency {
+				maxLatency = data.responseTime
 			}
-			if data.ResponseTime < minLatency {
-				minLatency = data.ResponseTime
+			if data.responseTime < minLatency {
+				minLatency = data.responseTime
 			}
 			// Response の Status Code を数える
-			v, ok := countStatusCode[data.StatusCode]
+			v, ok := countStatusCode[data.statusCode]
 			if ok {
 				v++
-				countStatusCode[data.StatusCode] = v
+				countStatusCode[data.statusCode] = v
 			} else {
-				countStatusCode[data.StatusCode] = 1
+				countStatusCode[data.statusCode] = 1
 			}
 			responses[i] = data
 			i++
