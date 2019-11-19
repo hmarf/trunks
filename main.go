@@ -109,6 +109,8 @@ func main() {
 	maxLatency := time.Duration(0)
 	minLatency := requestTime
 	meanLatency := time.Duration(0)
+	// context length
+	var totalContextLength int64
 LOOP:
 	for i := 0; ; {
 		select {
@@ -129,6 +131,8 @@ LOOP:
 			} else {
 				countStatusCode[data.statusCode] = 1
 			}
+			// ContextLength
+			totalContextLength += data.contextLength
 			responses[i] = data
 			i++
 		default:
@@ -139,6 +143,7 @@ LOOP:
 	fmt.Printf("\n\nSucceeded requests:  %v\n", len(responses))
 	fmt.Printf("Failed requests:     %v\n", RequestCount-len(responses))
 	fmt.Printf("Requests/sec:        %d\n", int(float64(RequestCount)/requestTime.Seconds()))
+	fmt.Printf("Total data received: %v\n", totalContextLength)
 	fmt.Printf("\nStatus code:\n")
 	for key, value := range countStatusCode {
 		if value != 0 {
