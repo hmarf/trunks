@@ -86,8 +86,8 @@ func main() {
 		go Attack(&wg, &ch, client, result_ch)
 	}
 	wg.Wait()
-	requestEnd := time.Now()
-	ShowDegreeProgression(requestEnd.Sub(requestStart), 100, float32(RequestCount), float32(RequestCount))
+	requestTime := time.Now().Sub(requestStart)
+	ShowDegreeProgression(requestTime, 100, float32(RequestCount), float32(RequestCount))
 
 	// Response結果を取得
 	responses := make([]Response, RequestCount)
@@ -107,7 +107,7 @@ func main() {
 
 	// Latency
 	maxLatency := time.Duration(0)
-	minLatency := requestEnd.Sub(requestStart)
+	minLatency := requestTime
 	meanLatency := time.Duration(0)
 LOOP:
 	for i := 0; ; {
@@ -138,15 +138,15 @@ LOOP:
 
 	fmt.Printf("\n\nSucceeded requests:  %v\n", len(responses))
 	fmt.Printf("Failed requests:     %v\n", RequestCount-len(responses))
-	fmt.Printf("Requests/sec:        %d\n", int(float64(RequestCount)/requestEnd.Sub(requestStart).Seconds()))
-	fmt.Println("Status code distribution:")
+	fmt.Printf("Requests/sec:        %d\n", int(float64(RequestCount)/requestTime.Seconds()))
+	fmt.Printf("\nStatus code:\n")
 	for key, value := range countStatusCode {
 		if value != 0 {
 			fmt.Printf("   [%v] %v responses\n", key, value)
 		}
 	}
-	fmt.Printf("Latency:\n   total: %v\n   max:   %v\n   min:   %v\n   ave:   %v\n",
-		requestEnd.Sub(requestStart), maxLatency, minLatency,
+	fmt.Printf("\nLatency:\n   total: %v\n   max:   %v\n   min:   %v\n   ave:   %v\n",
+		requestTime, maxLatency, minLatency,
 		meanLatency/time.Duration(RequestCount),
 	)
 }
