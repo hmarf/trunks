@@ -38,10 +38,10 @@ func Attack(wg *sync.WaitGroup, ch *chan int, client *http.Client, re chan Respo
 		<-*ch
 		return
 	}
-	rqEnd := time.Now()
+	// fmt.Println(resp.ContentLength)
 	re <- Response{
 		StatusCode:   resp.StatusCode,
-		ResponseTime: rqEnd.Sub(rqStart),
+		ResponseTime: time.Now().Sub(rqStart),
 	}
 	<-*ch
 }
@@ -138,15 +138,14 @@ LOOP:
 	fmt.Printf("\n\nSucceeded requests:  %v\n", len(responses))
 	fmt.Printf("Failed requests:     %v\n", RequestCount-len(responses))
 	fmt.Printf("Requests/sec:        %d\n", int(float64(RequestCount)/requestEnd.Sub(requestStart).Seconds()))
+	fmt.Println("Status code distribution:")
+	for key, value := range countStatusCode {
+		if value != 0 {
+			fmt.Printf("   [%v] %v responses\n", key, value)
+		}
+	}
 	fmt.Printf("Latency:\n   total: %v\n   max:   %v\n   min:   %v\n   ave:   %v\n",
 		requestEnd.Sub(requestStart), maxLatency, minLatency,
 		meanLatency/time.Duration(RequestCount),
 	)
-	fmt.Println("Status code distribution:")
-	for key, value := range countStatusCode {
-		if value != 0 {
-			fmt.Printf("    [%v] %v responses\n", key, value)
-		}
-	}
-
 }
