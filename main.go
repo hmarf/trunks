@@ -31,8 +31,8 @@ type ResultBenchMark struct {
 	succeedRequests   int           // 通信に成功したRequest
 	failedRequests    int           // 何らかの理由で通信に失敗したRequest
 	requestsSec       int           // 一秒間にアクセスできたRequestの総数
-	totalDataReceived int           // ContentLengthの総数
-	statusCode        map[int]int   // サーバーから返ってきたStatusCode
+	totalDataReceived int64         // ContentLengthの総数
+	statusCode        *map[int]int  // サーバーから返ってきたStatusCode
 	latecyTotal       time.Duration // 全てのResponseが返ってくるまでの総時間
 	latecyMax         time.Duration // Responseが来る待機時間の最も長かったもの
 	latecyMin         time.Duration // Responseが来る待機時間の最も短かったもの
@@ -40,7 +40,20 @@ type ResultBenchMark struct {
 }
 
 func ShowResult(result *ResultBenchMark) {
-	fmt.Println(result)
+	fmt.Printf("\n\nSucceeded requests:  %v\n", result.succeedRequests)
+	fmt.Printf("Failed requests:     %v\n", result.failedRequests)
+	fmt.Printf("Requests/sec:        %d\n", result.requestsSec)
+	fmt.Printf("Total data received: %v\n", result.totalDataReceived)
+	fmt.Printf("\nStatus code:\n")
+	for key, value := range *result.statusCode {
+		if value != 0 {
+			fmt.Printf("   [%v] %v responses\n", key, value)
+		}
+	}
+	fmt.Printf("\nLatency:\n   total: %v\n   max:   %v\n   min:   %v\n   ave:   %v\n",
+		result.latecyTotal, result.latecyMax, result.latecyMin,
+		result.latecyAve,
+	)
 }
 
 func ShowDegreeProgression(time time.Duration, degree int, maxRequest float32, done float32) {
@@ -135,6 +148,7 @@ func main() {
 		503: 0, // サービス利用不可
 	}
 
+	_result := ResultBenchMark{}
 	// Latency
 	maxLatency := time.Duration(0)
 	minLatency := requestTime
@@ -170,20 +184,15 @@ LOOP:
 		}
 	}
 
-	fmt.Printf("\n\nSucceeded requests:  %v\n", len(responses))
-	fmt.Printf("Failed requests:     %v\n", RequestCount-len(responses))
-	fmt.Printf("Requests/sec:        %d\n", int(float64(RequestCount)/requestTime.Seconds()))
-	fmt.Printf("Total data received: %v\n", totalContextLength)
-	fmt.Printf("\nStatus code:\n")
-	for key, value := range countStatusCode {
-		if value != 0 {
-			fmt.Printf("   [%v] %v responses\n", key, value)
-		}
-	}
-	fmt.Printf("\nLatency:\n   total: %v\n   max:   %v\n   min:   %v\n   ave:   %v\n",
-		requestTime, maxLatency, minLatency,
-		meanLatency/time.Duration(RequestCount),
-	)
+	_result.succeedRequests = len(responses)
+	_result.failedRequests = RequestCount - len(responses)
+	_result.requestsSec = int(float64(RequestCount) / requestTime.Seconds())
+	_result.totalDataReceived = totalContextLength
+	_result.statusCode = &countStatusCode
+	_result.latecyTotal = requestTime
+	_result.latecyMax = maxLatency
+	_result.latecyMin = minLatency
+	_result.latecyAve = meanLatency / time.Duration(RequestCount)
 
-	ShowResult(&ResultBenchMark{})
+	ShowResult(&_result)
 }
