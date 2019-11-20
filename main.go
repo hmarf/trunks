@@ -182,10 +182,12 @@ func main() {
 	// Request数
 	RequestCount := 100
 
+	// オラオラオラオラオラオラ！！！
 	request := Request{}
 	request.responseCH = make(chan Response, RequestCount)
 	totalTime := request.Attack(Channel, RequestCount)
 
+	// 結果表示
 	resultBenchMark := request.getResults(totalTime, RequestCount)
 	resultBenchMark.ShowResult()
 }
