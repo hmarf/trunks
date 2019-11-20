@@ -71,11 +71,12 @@ func ShowDegreeProgression(t time.Duration, degree int, maxRequest float32) {
 	fmt.Printf("] %v%v", degree, "%")
 }
 
-func (rq *Request) Attack(wg *sync.WaitGroup, ch *chan int) {
+func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int) {
 	defer wg.Done()
 	req, _ := http.NewRequest("GET", "http://localhost:8080", nil)
 	rqStart := time.Now()
 	resp, err := rq.client.Do(req)
+	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println(err)
 		<-*ch
@@ -89,25 +90,18 @@ func (rq *Request) Attack(wg *sync.WaitGroup, ch *chan int) {
 	<-*ch
 }
 
-func main() {
-
-	// 非同期数
-	Channel := 10
-
-	// Request数
-	RequestCount := 100
-
+func (r *Request) Attack(c int, requestCount int) time.Duration {
 	// MaxIdleConns: DefaultTransportでは100になっている。0にすると無制限
 	http.DefaultTransport.(*http.Transport).MaxIdleConns = 0
 	// MaxIdleConnsPerHost: デフォルト値は2。0にするとデフォルト値が使われる
-	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = Channel
+	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = c
 
 	// 並行処理するスレッド数を決める
-	ch := make(chan int, Channel)
+	ch := make(chan int, c)
 
-	request := Request{}
-	request.client = &http.Client{}
-	request.responseCH = make(chan Response, RequestCount)
+	// request := Request{}
+	r.client = &http.Client{}
+	r.responseCH = make(chan Response, requestCount)
 
 	// Requestを投げる時間測定
 	requestStart := time.Now()
@@ -116,21 +110,24 @@ func main() {
 	stash := 10
 	// ひたすらRequestを投げる
 	wg := sync.WaitGroup{}
-	for i := 0; i < RequestCount; i++ {
+	for i := 0; i < requestCount; i++ {
 		ch <- 1
 		wg.Add(1)
-		degree := int((float32(i) / float32(RequestCount)) * 100)
+		degree := int((float32(i) / float32(requestCount)) * 100)
 		degreeP := degree / 5
 		if degreeP != stash {
 			stash = degreeP
-			ShowDegreeProgression(time.Now().Sub(requestStart), degree, float32(RequestCount))
+			ShowDegreeProgression(time.Now().Sub(requestStart), degree, float32(requestCount))
 		}
-		go request.Attack(&wg, &ch)
+		go r.Kikouha(&wg, &ch)
 	}
 	wg.Wait()
-	requestsTime := time.Now().Sub(requestStart)
-	ShowDegreeProgression(requestsTime, 100, float32(RequestCount))
+	totalTime := time.Now().Sub(requestStart)
+	ShowDegreeProgression(totalTime, 100, float32(requestCount))
+	return totalTime
+}
 
+func (rq *Request) getResults(totalTime time.Duration, requestCount int) ResultBenchMark {
 	// メジャーなステータスコードを初期値とする
 	// https://www.sakurasaku-labo.jp/blogs/status-code-basic-knowledgess
 	_result := ResultBenchMark{}
@@ -146,22 +143,20 @@ func main() {
 		503: 0, // サービス利用不可
 	}
 
-	// Latency
-	maxLatency := time.Duration(0)
-	minLatency := requestsTime
-	meanLatency := time.Duration(0)
+	_result.latecyTotal = totalTime
+	_result.latecyMin = totalTime
 	i := 0
 LOOP:
 	for ; ; i++ {
 		select {
-		case data := <-request.responseCH:
-			meanLatency += data.responseTime
+		case data := <-rq.responseCH:
+			_result.latecyAve += data.responseTime
 			// 待機時間　max, min
-			if data.responseTime > maxLatency {
-				maxLatency = data.responseTime
+			if data.responseTime > _result.latecyMax {
+				_result.latecyMax = data.responseTime
 			}
-			if data.responseTime < minLatency {
-				minLatency = data.responseTime
+			if data.responseTime < _result.latecyMin {
+				_result.latecyMin = data.responseTime
 			}
 			// Response の Status Code を数える
 			v, ok := _result.statusCode[data.statusCode]
@@ -177,14 +172,25 @@ LOOP:
 			break LOOP
 		}
 	}
-
 	_result.succeedRequests = i
-	_result.failedRequests = RequestCount - i
-	_result.requestsSec = int(float64(RequestCount) / requestsTime.Seconds())
-	_result.latecyTotal = requestsTime
-	_result.latecyMax = maxLatency
-	_result.latecyMin = minLatency
-	_result.latecyAve = meanLatency / time.Duration(RequestCount)
+	_result.failedRequests = requestCount - i
+	return _result
+}
 
-	_result.ShowResult()
+func main() {
+
+	// 非同期数
+	Channel := 10
+
+	// Request数
+	RequestCount := 100
+
+	// オラオラオラオラオラオラ！！！
+	request := Request{}
+	request.responseCH = make(chan Response, RequestCount)
+	totalTime := request.Attack(Channel, RequestCount)
+
+	// 結果表示
+	resultBenchMark := request.getResults(totalTime, RequestCount)
+	resultBenchMark.ShowResult()
 }
