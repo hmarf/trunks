@@ -7,17 +7,20 @@ import (
 	"time"
 )
 
+// Request用
 type Request struct {
 	client     *http.Client
 	responseCH chan Response
 }
 
+// Response用
 type Response struct {
 	statusCode    int
 	contextLength int64
 	responseTime  time.Duration
 }
 
+// ベンチマークの結果を計算し収納する場所
 type ResultBenchMark struct {
 	succeedRequests   int           // 通信に成功したRequest
 	failedRequests    int           // 何らかの理由で通信に失敗したRequest
