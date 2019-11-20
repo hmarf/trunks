@@ -7,20 +7,6 @@ import (
 	"time"
 )
 
-// output
-// [00:00:00] [##################################################] 100%
-// Succeeded requests:  100
-// Failed requests:     0
-// Requests/sec:        2113
-// Total data received: 1200
-// Status code:
-//    [200] 100 responses
-// Latency:
-//    total: 47.315016ms
-//    max:   10.46468ms
-//    min:   1.369459ms
-//    ave:   4.270067ms
-
 type Request struct {
 	client     *http.Client
 	responseCH chan Response
@@ -37,7 +23,7 @@ type ResultBenchMark struct {
 	failedRequests    int           // 何らかの理由で通信に失敗したRequest
 	requestsSec       int           // 一秒間にアクセスできたRequestの総数
 	totalDataReceived int64         // ContentLengthの総数
-	statusCode        *map[int]int  // サーバーから返ってきたStatusCode
+	statusCode        map[int]int   // サーバーから返ってきたStatusCode
 	latecyTotal       time.Duration // 全てのResponseが返ってくるまでの総時間
 	latecyMax         time.Duration // Responseが来る待機時間の最も長かったもの
 	latecyMin         time.Duration // Responseが来る待機時間の最も短かったもの
@@ -47,10 +33,15 @@ type ResultBenchMark struct {
 func (result *ResultBenchMark) ShowResult() {
 	fmt.Printf("\n\nSucceeded requests:  %v\n", result.succeedRequests)
 	fmt.Printf("Failed requests:     %v\n", result.failedRequests)
-	fmt.Printf("Requests/sec:        %d\n", result.requestsSec)
+
+	if result.latecyTotal < time.Duration(1*time.Second) {
+		fmt.Printf("Requests/sec:        %d\n", result.succeedRequests)
+	} else {
+		fmt.Printf("Requests/sec:        %d\n", result.requestsSec)
+	}
 	fmt.Printf("Total data received: %v\n", result.totalDataReceived)
 	fmt.Printf("\nStatus code:\n")
-	for key, value := range *result.statusCode {
+	for key, value := range result.statusCode {
 		if value != 0 {
 			fmt.Printf("   [%v] %v responses\n", key, value)
 		}
@@ -108,17 +99,12 @@ func main() {
 	// MaxIdleConnsPerHost: デフォルト値は2。0にするとデフォルト値が使われる
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = Channel
 
-	// client := &http.Client{}
-
 	// 並行処理するスレッド数を決める
 	ch := make(chan int, Channel)
 
 	request := Request{}
 	request.client = &http.Client{}
 	request.responseCH = make(chan Response, RequestCount)
-
-	// Responseを溜めておく
-	// result_ch := make(chan Response, RequestCount)
 
 	// Requestを投げる時間測定
 	requestStart := time.Now()
@@ -142,11 +128,10 @@ func main() {
 	requestsTime := time.Now().Sub(requestStart)
 	ShowDegreeProgression(requestsTime, 100, float32(RequestCount))
 
-	// Response結果を取得
-	// responses := make([]Response, RequestCount)
 	// メジャーなステータスコードを初期値とする
 	// https://www.sakurasaku-labo.jp/blogs/status-code-basic-knowledgess
-	countStatusCode := map[int]int{
+	_result := ResultBenchMark{}
+	_result.statusCode = map[int]int{
 		200: 0, // 成功
 		301: 0, // 恒久的にページが移動している
 		302: 0, // 一時的にページが移動している
@@ -158,16 +143,13 @@ func main() {
 		503: 0, // サービス利用不可
 	}
 
-	_result := ResultBenchMark{}
 	// Latency
 	maxLatency := time.Duration(0)
 	minLatency := requestsTime
 	meanLatency := time.Duration(0)
-	// context length
-	var totalContextLength int64
 	i := 0
 LOOP:
-	for {
+	for ; ; i++ {
 		select {
 		case data := <-request.responseCH:
 			meanLatency += data.responseTime
@@ -179,28 +161,23 @@ LOOP:
 				minLatency = data.responseTime
 			}
 			// Response の Status Code を数える
-			v, ok := countStatusCode[data.statusCode]
+			v, ok := _result.statusCode[data.statusCode]
 			if ok {
 				v++
-				countStatusCode[data.statusCode] = v
+				_result.statusCode[data.statusCode] = v
 			} else {
-				countStatusCode[data.statusCode] = 1
+				_result.statusCode[data.statusCode] = 1
 			}
 			// ContextLength
-			totalContextLength += data.contextLength
-			// responses[i] = data
-			i++
+			_result.totalDataReceived += data.contextLength
 		default:
 			break LOOP
 		}
 	}
-	fmt.Println(i)
 
 	_result.succeedRequests = i
 	_result.failedRequests = RequestCount - i
 	_result.requestsSec = int(float64(RequestCount) / requestsTime.Seconds())
-	_result.totalDataReceived = totalContextLength
-	_result.statusCode = &countStatusCode
 	_result.latecyTotal = requestsTime
 	_result.latecyMax = maxLatency
 	_result.latecyMin = minLatency
