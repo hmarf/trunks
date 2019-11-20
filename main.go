@@ -73,6 +73,7 @@ func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int) {
 	req, _ := http.NewRequest("GET", "http://localhost:8080", nil)
 	rqStart := time.Now()
 	resp, err := rq.client.Do(req)
+	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println(err)
 		<-*ch
@@ -122,18 +123,8 @@ func (r *Request) Attack(c int, requestCount int) time.Duration {
 	ShowDegreeProgression(totalTime, 100, float32(requestCount))
 	return totalTime
 }
-func main() {
 
-	// 非同期数
-	Channel := 10
-
-	// Request数
-	RequestCount := 100
-
-	request := Request{}
-	request.responseCH = make(chan Response, RequestCount)
-	totalTime := request.Attack(Channel, RequestCount)
-
+func (rq *Request) getResults(totalTime time.Duration, requestCount int) ResultBenchMark {
 	// メジャーなステータスコードを初期値とする
 	// https://www.sakurasaku-labo.jp/blogs/status-code-basic-knowledgess
 	_result := ResultBenchMark{}
@@ -149,22 +140,20 @@ func main() {
 		503: 0, // サービス利用不可
 	}
 
-	// Latency
-	maxLatency := time.Duration(0)
-	minLatency := totalTime
-	meanLatency := time.Duration(0)
+	_result.latecyTotal = totalTime
+	_result.latecyMin = totalTime
 	i := 0
 LOOP:
 	for ; ; i++ {
 		select {
-		case data := <-request.responseCH:
-			meanLatency += data.responseTime
+		case data := <-rq.responseCH:
+			_result.latecyAve += data.responseTime
 			// 待機時間　max, min
-			if data.responseTime > maxLatency {
-				maxLatency = data.responseTime
+			if data.responseTime > _result.latecyMax {
+				_result.latecyMax = data.responseTime
 			}
-			if data.responseTime < minLatency {
-				minLatency = data.responseTime
+			if data.responseTime < _result.latecyMin {
+				_result.latecyMin = data.responseTime
 			}
 			// Response の Status Code を数える
 			v, ok := _result.statusCode[data.statusCode]
@@ -181,11 +170,22 @@ LOOP:
 		}
 	}
 	_result.succeedRequests = i
-	_result.failedRequests = RequestCount - i
-	_result.requestsSec = int(float64(RequestCount) / totalTime.Seconds())
-	_result.latecyTotal = totalTime
-	_result.latecyMax = maxLatency
-	_result.latecyMin = minLatency
-	_result.latecyAve = meanLatency / time.Duration(RequestCount)
-	_result.ShowResult()
+	_result.failedRequests = requestCount - i
+	return _result
+}
+
+func main() {
+
+	// 非同期数
+	Channel := 10
+
+	// Request数
+	RequestCount := 100
+
+	request := Request{}
+	request.responseCH = make(chan Response, RequestCount)
+	totalTime := request.Attack(Channel, RequestCount)
+
+	resultBenchMark := request.getResults(totalTime, RequestCount)
+	resultBenchMark.ShowResult()
 }
