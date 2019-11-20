@@ -21,6 +21,11 @@ import (
 //    min:   1.369459ms
 //    ave:   4.270067ms
 
+type Request struct {
+	client     *http.Client
+	responseCH chan Response
+}
+
 type Response struct {
 	statusCode    int
 	contextLength int64
@@ -72,17 +77,17 @@ func ShowDegreeProgression(t time.Duration, degree int, maxRequest float32) {
 	fmt.Printf("] %v%v", degree, "%")
 }
 
-func Attack(wg *sync.WaitGroup, ch *chan int, c *http.Client, r chan Response) {
+func (rq *Request) Attack(wg *sync.WaitGroup, ch *chan int) {
 	defer wg.Done()
 	req, _ := http.NewRequest("GET", "http://localhost:8080", nil)
 	rqStart := time.Now()
-	resp, err := c.Do(req)
+	resp, err := rq.client.Do(req)
 	if err != nil {
 		fmt.Println(err)
 		<-*ch
 		return
 	}
-	r <- Response{
+	rq.responseCH <- Response{
 		statusCode:    resp.StatusCode,
 		contextLength: resp.ContentLength,
 		responseTime:  time.Now().Sub(rqStart),
@@ -103,13 +108,17 @@ func main() {
 	// MaxIdleConnsPerHost: デフォルト値は2。0にするとデフォルト値が使われる
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = Channel
 
-	client := &http.Client{}
+	// client := &http.Client{}
 
 	// 並行処理するスレッド数を決める
 	ch := make(chan int, Channel)
 
+	request := Request{}
+	request.client = &http.Client{}
+	request.responseCH = make(chan Response, RequestCount)
+
 	// Responseを溜めておく
-	result_ch := make(chan Response, RequestCount)
+	// result_ch := make(chan Response, RequestCount)
 
 	// Requestを投げる時間測定
 	requestStart := time.Now()
@@ -127,14 +136,14 @@ func main() {
 			stash = degreeP
 			ShowDegreeProgression(time.Now().Sub(requestStart), degree, float32(RequestCount))
 		}
-		go Attack(&wg, &ch, client, result_ch)
+		go request.Attack(&wg, &ch)
 	}
 	wg.Wait()
 	requestsTime := time.Now().Sub(requestStart)
 	ShowDegreeProgression(requestsTime, 100, float32(RequestCount))
 
 	// Response結果を取得
-	responses := make([]Response, RequestCount)
+	// responses := make([]Response, RequestCount)
 	// メジャーなステータスコードを初期値とする
 	// https://www.sakurasaku-labo.jp/blogs/status-code-basic-knowledgess
 	countStatusCode := map[int]int{
@@ -160,7 +169,7 @@ func main() {
 LOOP:
 	for {
 		select {
-		case data := <-result_ch:
+		case data := <-request.responseCH:
 			meanLatency += data.responseTime
 			// 待機時間　max, min
 			if data.responseTime > maxLatency {
@@ -179,7 +188,7 @@ LOOP:
 			}
 			// ContextLength
 			totalContextLength += data.contextLength
-			responses[i] = data
+			// responses[i] = data
 			i++
 		default:
 			break LOOP
@@ -187,8 +196,8 @@ LOOP:
 	}
 	fmt.Println(i)
 
-	_result.succeedRequests = len(responses)
-	_result.failedRequests = RequestCount - len(responses)
+	_result.succeedRequests = i
+	_result.failedRequests = RequestCount - i
 	_result.requestsSec = int(float64(RequestCount) / requestsTime.Seconds())
 	_result.totalDataReceived = totalContextLength
 	_result.statusCode = &countStatusCode
