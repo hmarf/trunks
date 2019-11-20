@@ -7,10 +7,40 @@ import (
 	"time"
 )
 
+// output
+// [00:00:00] [##################################################] 100%
+// Succeeded requests:  100
+// Failed requests:     0
+// Requests/sec:        2113
+// Total data received: 1200
+// Status code:
+//    [200] 100 responses
+// Latency:
+//    total: 47.315016ms
+//    max:   10.46468ms
+//    min:   1.369459ms
+//    ave:   4.270067ms
+
 type Response struct {
 	statusCode    int
 	contextLength int64
 	responseTime  time.Duration
+}
+
+type ResultBenchMark struct {
+	succeedRequests   int           // 通信に成功したRequest
+	failedRequests    int           // 何らかの理由で通信に失敗したRequest
+	requestsSec       int           // 一秒間にアクセスできたRequestの総数
+	totalDataReceived int           // ContentLengthの総数
+	statusCode        map[int]int   // サーバーから返ってきたStatusCode
+	latecyTotal       time.Duration // 全てのResponseが返ってくるまでの総時間
+	latecyMax         time.Duration // Responseが来る待機時間の最も長かったもの
+	latecyMin         time.Duration // Responseが来る待機時間の最も短かったもの
+	latecyAve         time.Duration // Responseが来る待機時間の平均
+}
+
+func ShowResult(result *ResultBenchMark) {
+	fmt.Println(result)
 }
 
 func ShowDegreeProgression(time time.Duration, degree int, maxRequest float32, done float32) {
@@ -154,4 +184,6 @@ LOOP:
 		requestTime, maxLatency, minLatency,
 		meanLatency/time.Duration(RequestCount),
 	)
+
+	ShowResult(&ResultBenchMark{})
 }
