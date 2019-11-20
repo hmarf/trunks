@@ -39,7 +39,7 @@ type ResultBenchMark struct {
 	latecyAve         time.Duration // Responseが来る待機時間の平均
 }
 
-func ShowResult(result *ResultBenchMark) {
+func (result *ResultBenchMark) ShowResult() {
 	fmt.Printf("\n\nSucceeded requests:  %v\n", result.succeedRequests)
 	fmt.Printf("Failed requests:     %v\n", result.failedRequests)
 	fmt.Printf("Requests/sec:        %d\n", result.requestsSec)
@@ -56,10 +56,10 @@ func ShowResult(result *ResultBenchMark) {
 	)
 }
 
-func ShowDegreeProgression(time time.Duration, degree int, maxRequest float32, done float32) {
+func ShowDegreeProgression(t time.Duration, degree int, maxRequest float32) {
 	progression := 50
 	progressionCount := degree / (100 / progression)
-	fmt.Printf("\r[%02d:%02d:%02d] [", int(time.Hours()), int(time.Minutes())%60, int(time.Seconds())%60)
+	fmt.Printf("\r[%02d:%02d:%02d] [", int(t.Hours()), int(t.Minutes())%60, int(t.Seconds())%60)
 	for i := 0; i < progressionCount; i++ {
 		fmt.Printf("#")
 	}
@@ -72,17 +72,17 @@ func ShowDegreeProgression(time time.Duration, degree int, maxRequest float32, d
 	fmt.Printf("] %v%v", degree, "%")
 }
 
-func Attack(wg *sync.WaitGroup, ch *chan int, client *http.Client, re chan Response) {
+func Attack(wg *sync.WaitGroup, ch *chan int, c *http.Client, r chan Response) {
 	defer wg.Done()
 	req, _ := http.NewRequest("GET", "http://localhost:8080", nil)
 	rqStart := time.Now()
-	resp, err := client.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
 		fmt.Println(err)
 		<-*ch
 		return
 	}
-	re <- Response{
+	r <- Response{
 		statusCode:    resp.StatusCode,
 		contextLength: resp.ContentLength,
 		responseTime:  time.Now().Sub(rqStart),
@@ -114,8 +114,9 @@ func main() {
 	// Requestを投げる時間測定
 	requestStart := time.Now()
 
-	// ひたすらRequestを投げる
+	// stashはとりあえず0意外なら何でもいい
 	stash := 10
+	// ひたすらRequestを投げる
 	wg := sync.WaitGroup{}
 	for i := 0; i < RequestCount; i++ {
 		ch <- 1
@@ -124,13 +125,13 @@ func main() {
 		degreeP := degree / 5
 		if degreeP != stash {
 			stash = degreeP
-			ShowDegreeProgression(time.Now().Sub(requestStart), degree, float32(RequestCount), float32(i))
+			ShowDegreeProgression(time.Now().Sub(requestStart), degree, float32(RequestCount))
 		}
 		go Attack(&wg, &ch, client, result_ch)
 	}
 	wg.Wait()
-	requestTime := time.Now().Sub(requestStart)
-	ShowDegreeProgression(requestTime, 100, float32(RequestCount), float32(RequestCount))
+	requestsTime := time.Now().Sub(requestStart)
+	ShowDegreeProgression(requestsTime, 100, float32(RequestCount))
 
 	// Response結果を取得
 	responses := make([]Response, RequestCount)
@@ -151,12 +152,13 @@ func main() {
 	_result := ResultBenchMark{}
 	// Latency
 	maxLatency := time.Duration(0)
-	minLatency := requestTime
+	minLatency := requestsTime
 	meanLatency := time.Duration(0)
 	// context length
 	var totalContextLength int64
+	i := 0
 LOOP:
-	for i := 0; ; {
+	for {
 		select {
 		case data := <-result_ch:
 			meanLatency += data.responseTime
@@ -183,16 +185,17 @@ LOOP:
 			break LOOP
 		}
 	}
+	fmt.Println(i)
 
 	_result.succeedRequests = len(responses)
 	_result.failedRequests = RequestCount - len(responses)
-	_result.requestsSec = int(float64(RequestCount) / requestTime.Seconds())
+	_result.requestsSec = int(float64(RequestCount) / requestsTime.Seconds())
 	_result.totalDataReceived = totalContextLength
 	_result.statusCode = &countStatusCode
-	_result.latecyTotal = requestTime
+	_result.latecyTotal = requestsTime
 	_result.latecyMax = maxLatency
 	_result.latecyMin = minLatency
 	_result.latecyAve = meanLatency / time.Duration(RequestCount)
 
-	ShowResult(&_result)
+	_result.ShowResult()
 }
