@@ -3,6 +3,7 @@ package attack
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -65,6 +66,24 @@ func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int) {
 }
 
 func (r *Request) Attack(c int, requestCount int) time.Duration {
+
+	r.Client = &http.Client{
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			MaxIdleConns:          0, // DefaultTransport: 100, 0にすると無制限。
+			MaxIdleConnsPerHost:   requestCount,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: 10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+		Timeout: 60 * time.Second,
+	}
+	r.ResponseCH = make(chan Response, requestCount)
 
 	// 並行処理するスレッド数を決める
 	ch := make(chan int, c)
