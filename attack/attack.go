@@ -2,6 +2,7 @@ package attack
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
@@ -76,7 +77,13 @@ func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int) {
 	req, _ := http.NewRequest("GET", "http://localhost:8080", nil)
 	rqStart := time.Now()
 	resp, err := rq.Client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		<-*ch
+		return
+	}
 	defer resp.Body.Close()
+	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 		<-*ch
@@ -91,17 +98,9 @@ func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int) {
 }
 
 func (r *Request) Attack(c int, requestCount int) time.Duration {
-	// MaxIdleConns: DefaultTransportでは100になっている。0にすると無制限
-	http.DefaultTransport.(*http.Transport).MaxIdleConns = 0
-	// MaxIdleConnsPerHost: デフォルト値は2。0にするとデフォルト値が使われる
-	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = c
 
 	// 並行処理するスレッド数を決める
 	ch := make(chan int, c)
-
-	// request := Request{}
-	r.Client = &http.Client{}
-	r.ResponseCH = make(chan Response, requestCount)
 
 	// Requestを投げる時間測定
 	requestStart := time.Now()
