@@ -42,7 +42,7 @@ func (result *ResultBenchMark) ShowResult() {
 	} else {
 		fmt.Printf("Requests/sec:        %d\n", result.requestsSec)
 	}
-	fmt.Printf("Total data received: %v\n", result.totalDataReceived)
+	fmt.Printf("Total data received: %v bytes\n", result.totalDataReceived)
 	fmt.Printf("\nStatus code:\n")
 	for key, value := range result.statusCode {
 		if value != 0 {
@@ -183,7 +183,7 @@ func main() {
 	Channel := 10
 
 	// Request数
-	RequestCount := 100
+	RequestCount := 10000
 
 	// オラオラオラオラオラオラ！！！
 	request := Request{}
