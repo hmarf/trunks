@@ -1,0 +1,23 @@
+{
+    "concurrency_level": 10,
+    "total_requests": 10000,
+    "succeed": 10000,
+    "failed": 0,
+    "requests_sec": 0,
+    "total_data_reveived": 120000,
+    "status_code": {
+        "200": 10000,
+        "301": 0,
+        "302": 0,
+        "400": 0,
+        "401": 0,
+        "403": 0,
+        "404": 0,
+        "500": 0,
+        "503": 0
+    },
+    "latecy_total": 1396439656,
+    "latecy_max": 64602284,
+    "latecy_min": 161324,
+    "latecy_ave": 13656733328
+}

@@ -1,7 +1,11 @@
 package report
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 	"time"
 )
 
@@ -20,26 +24,49 @@ type ResultBenchMark struct {
 	LatecyAve         time.Duration `json:"latecy_ave"`          // Responseが来る待機時間の平均
 }
 
-func (result *ResultBenchMark) ShowResult() {
-	fmt.Printf("\n\nConcurrency Level:   %v\n", result.ConcurrencyLevel)
-	fmt.Printf("Total Requests:      %v\n", result.TotalRequests)
-	fmt.Printf("Succeeded requests:  %v\n", result.SucceedRequests)
-	fmt.Printf("Failed requests:     %v\n", result.FailedRequests)
+func (r *ResultBenchMark) ShowResult() {
+	r.WriteResultFile()
+	r.ShowResultConsole()
+}
 
-	if result.LatecyTotal < time.Duration(1*time.Second) {
-		fmt.Printf("Requests/sec:        %d\n", result.SucceedRequests)
-	} else {
-		fmt.Printf("Requests/sec:        %d\n", result.RequestsSec)
+func (r *ResultBenchMark) WriteResultFile() {
+	jsonBytes, err := json.Marshal(*r)
+	if err != nil {
+		log.Println("ベンチマークの結果の保存に失敗しました(json文字列の作成に失敗しました)")
+		return
 	}
-	fmt.Printf("Total data received: %v bytes\n", result.TotalDataReceived)
+	out := new(bytes.Buffer)
+	json.Indent(out, jsonBytes, "", "    ")
+	file, err := os.Create("./output.json")
+	if err != nil {
+		log.Println("ベンチマークの結果の保存に失敗しました(fileを作成できませんでした。)")
+		return
+	}
+	defer file.Close()
+
+	file.Write(([]byte)(out.String()))
+}
+
+func (r *ResultBenchMark) ShowResultConsole() {
+	fmt.Printf("\n\nConcurrency Level:   %v\n", r.ConcurrencyLevel)
+	fmt.Printf("Total Requests:      %v\n", r.TotalRequests)
+	fmt.Printf("Succeeded requests:  %v\n", r.SucceedRequests)
+	fmt.Printf("Failed requests:     %v\n", r.FailedRequests)
+
+	if r.LatecyTotal < time.Duration(1*time.Second) {
+		fmt.Printf("Requests/sec:        %d\n", r.SucceedRequests)
+	} else {
+		fmt.Printf("Requests/sec:        %d\n", r.RequestsSec)
+	}
+	fmt.Printf("Total data received: %v bytes\n", r.TotalDataReceived)
 	fmt.Printf("\nStatus code:\n")
-	for key, value := range result.StatusCode {
+	for key, value := range r.StatusCode {
 		if value != 0 {
 			fmt.Printf("   [%v] %v responses\n", key, value)
 		}
 	}
 	fmt.Printf("\nLatency:\n   total: %v\n   max:   %v\n   min:   %v\n   ave:   %v\n",
-		result.LatecyTotal, result.LatecyMax, result.LatecyMin,
-		result.LatecyAve,
+		r.LatecyTotal, r.LatecyMax, r.LatecyMin,
+		r.LatecyAve,
 	)
 }
