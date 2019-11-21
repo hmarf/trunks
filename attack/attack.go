@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/hmarf/go_benchmark/report"
 )
 
 // Request用
@@ -19,41 +21,6 @@ type Response struct {
 	statusCode    int
 	contextLength int64
 	responseTime  time.Duration
-}
-
-// ベンチマークの結果を計算し収納する場所
-type ResultBenchMark struct {
-	succeedRequests   int           // 通信に成功したRequest
-	failedRequests    int           // 何らかの理由で通信に失敗したRequest
-	requestsSec       int           // 一秒間にアクセスできたRequestの総数
-	totalDataReceived int64         // ContentLengthの総数
-	statusCode        map[int]int   // サーバーから返ってきたStatusCode
-	latecyTotal       time.Duration // 全てのResponseが返ってくるまでの総時間
-	latecyMax         time.Duration // Responseが来る待機時間の最も長かったもの
-	latecyMin         time.Duration // Responseが来る待機時間の最も短かったもの
-	latecyAve         time.Duration // Responseが来る待機時間の平均
-}
-
-func (result *ResultBenchMark) ShowResult() {
-	fmt.Printf("\n\nSucceeded requests:  %v\n", result.succeedRequests)
-	fmt.Printf("Failed requests:     %v\n", result.failedRequests)
-
-	if result.latecyTotal < time.Duration(1*time.Second) {
-		fmt.Printf("Requests/sec:        %d\n", result.succeedRequests)
-	} else {
-		fmt.Printf("Requests/sec:        %d\n", result.requestsSec)
-	}
-	fmt.Printf("Total data received: %v bytes\n", result.totalDataReceived)
-	fmt.Printf("\nStatus code:\n")
-	for key, value := range result.statusCode {
-		if value != 0 {
-			fmt.Printf("   [%v] %v responses\n", key, value)
-		}
-	}
-	fmt.Printf("\nLatency:\n   total: %v\n   max:   %v\n   min:   %v\n   ave:   %v\n",
-		result.latecyTotal, result.latecyMax, result.latecyMin,
-		result.latecyAve,
-	)
 }
 
 func ShowDegreeProgression(t time.Duration, degree int, maxRequest float32) {
@@ -126,11 +93,11 @@ func (r *Request) Attack(c int, requestCount int) time.Duration {
 	return totalTime
 }
 
-func (rq *Request) GetResults(totalTime time.Duration, requestCount int) ResultBenchMark {
+func (rq *Request) GetResults(totalTime time.Duration, requestCount int, channel int) report.ResultBenchMark {
 	// メジャーなステータスコードを初期値とする
 	// https://www.sakurasaku-labo.jp/blogs/status-code-basic-knowledgess
-	_result := ResultBenchMark{}
-	_result.statusCode = map[int]int{
+	_result := report.ResultBenchMark{}
+	_result.StatusCode = map[int]int{
 		200: 0, // 成功
 		301: 0, // 恒久的にページが移動している
 		302: 0, // 一時的にページが移動している
@@ -142,36 +109,38 @@ func (rq *Request) GetResults(totalTime time.Duration, requestCount int) ResultB
 		503: 0, // サービス利用不可
 	}
 
-	_result.latecyTotal = totalTime
-	_result.latecyMin = totalTime
+	_result.ConcurrencyLevel = channel
+	_result.TotalRequests = requestCount
+	_result.LatecyTotal = totalTime
+	_result.LatecyMin = totalTime
 	i := 0
 LOOP:
 	for ; ; i++ {
 		select {
 		case data := <-rq.ResponseCH:
-			_result.latecyAve += data.responseTime
+			_result.LatecyAve += data.responseTime
 			// 待機時間　max, min
-			if data.responseTime > _result.latecyMax {
-				_result.latecyMax = data.responseTime
+			if data.responseTime > _result.LatecyMax {
+				_result.LatecyMax = data.responseTime
 			}
-			if data.responseTime < _result.latecyMin {
-				_result.latecyMin = data.responseTime
+			if data.responseTime < _result.LatecyMin {
+				_result.LatecyMin = data.responseTime
 			}
 			// Response の Status Code を数える
-			v, ok := _result.statusCode[data.statusCode]
+			v, ok := _result.StatusCode[data.statusCode]
 			if ok {
 				v++
-				_result.statusCode[data.statusCode] = v
+				_result.StatusCode[data.statusCode] = v
 			} else {
-				_result.statusCode[data.statusCode] = 1
+				_result.StatusCode[data.statusCode] = 1
 			}
 			// ContextLength
-			_result.totalDataReceived += data.contextLength
+			_result.TotalDataReceived += data.contextLength
 		default:
 			break LOOP
 		}
 	}
-	_result.succeedRequests = i
-	_result.failedRequests = requestCount - i
+	_result.SucceedRequests = i
+	_result.FailedRequests = requestCount - i
 	return _result
 }

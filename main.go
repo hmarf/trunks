@@ -39,6 +39,6 @@ func main() {
 	totalTime := request.Attack(Channel, RequestCount)
 
 	// 結果表示
-	resultBenchMark := request.GetResults(totalTime, RequestCount)
+	resultBenchMark := request.GetResults(totalTime, RequestCount, Channel)
 	resultBenchMark.ShowResult()
 }
