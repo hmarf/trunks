@@ -25,8 +25,8 @@ func main() {
 					KeepAlive: 30 * time.Second,
 					DualStack: true,
 				}).DialContext,
-				MaxIdleConns:          RequestCount,
-				MaxIdleConnsPerHost:   500,
+				MaxIdleConns:          0, // DefaultTransport: 100, 0にすると無制限。
+				MaxIdleConnsPerHost:   RequestCount,
 				IdleConnTimeout:       90 * time.Second,
 				TLSHandshakeTimeout:   10 * time.Second,
 				ResponseHeaderTimeout: 10 * time.Second,
