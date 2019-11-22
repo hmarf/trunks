@@ -13,6 +13,7 @@ import (
 
 // Request用
 type Request struct {
+	URL        string
 	Client     *http.Client
 	ResponseCH chan Response
 }
@@ -42,7 +43,7 @@ func ShowDegreeProgression(t time.Duration, degree int, maxRequest float32) {
 
 func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int) {
 	defer wg.Done()
-	req, _ := http.NewRequest("GET", "http://localhost:8080", nil)
+	req, _ := http.NewRequest("GET", rq.URL, nil)
 	rqStart := time.Now()
 	resp, err := rq.Client.Do(req)
 	if err != nil {

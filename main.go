@@ -39,7 +39,7 @@ func Action(c *cli.Context) {
 		app.Run(os.Args)
 		return
 	}
-	trunks.Trunks(c.Int("concurrency"), c.Int("requests"))
+	trunks.Trunks(c.Int("concurrency"), c.Int("requests"), c.String("url"))
 }
 
 func main() {
@@ -47,12 +47,5 @@ func main() {
 	app := App()
 	app.Action = Action
 	app.Run(os.Args)
-	// // 非同期数
-	// Channel := 10
 
-	// // Request数
-	// RequestCount := 10000
-
-	// // オラオラオラオラオラオラ！！！
-	// trunks.Trunks(Channel, RequestCount)
 }
