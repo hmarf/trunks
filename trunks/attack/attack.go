@@ -41,9 +41,8 @@ func ShowDegreeProgression(t time.Duration, degree int, maxRequest float32) {
 	fmt.Printf("] %v%v", degree, "%")
 }
 
-func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int) {
+func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int, req *http.Request) {
 	defer wg.Done()
-	req, _ := http.NewRequest("GET", rq.URL, nil)
 	rqStart := time.Now()
 	resp, err := rq.Client.Do(req)
 	if err != nil {
@@ -92,6 +91,8 @@ func (r *Request) Attack(c int, requestCount int) time.Duration {
 	// Requestを投げる時間測定
 	requestStart := time.Now()
 
+	req, _ := http.NewRequest("GET", r.URL, nil)
+
 	// stashはとりあえず0意外なら何でもいい
 	stash := 10
 	// ひたすらRequestを投げる
@@ -105,7 +106,7 @@ func (r *Request) Attack(c int, requestCount int) time.Duration {
 			stash = degreeP
 			ShowDegreeProgression(time.Now().Sub(requestStart), degree, float32(requestCount))
 		}
-		go r.Kikouha(&wg, &ch)
+		go r.Kikouha(&wg, &ch, req)
 	}
 	wg.Wait()
 	totalTime := time.Now().Sub(requestStart)
