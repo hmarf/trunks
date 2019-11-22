@@ -44,9 +44,7 @@ func Action(c *cli.Context) {
 }
 
 func main() {
-
 	app := App()
 	app.Action = Action
 	app.Run(os.Args)
-
 }
