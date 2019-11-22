@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	"github.com/hmarf/trunks/trunks"
 	"github.com/urfave/cli"
@@ -35,7 +36,7 @@ func App() *cli.App {
 
 func Action(c *cli.Context) {
 	app := App()
-	if c.String("url") == "None" {
+	if c.String("url") == "None" || !strings.HasPrefix(c.String("url"), "http") {
 		app.Run(os.Args)
 		return
 	}
