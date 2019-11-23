@@ -2,11 +2,18 @@ package main
 
 import (
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/hmarf/trunks/trunks"
+	"github.com/hmarf/trunks/trunks/attack"
 	"github.com/urfave/cli"
 )
+
+func headerSplit(header string) []string {
+	re := regexp.MustCompile(`^([\w-]+):\s*(.+)`)
+	return re.FindStringSubmatch(header)
+}
 
 func App() *cli.App {
 	app := cli.NewApp()
@@ -30,17 +37,29 @@ func App() *cli.App {
 			Value: "None",
 			Usage: "URL to hit",
 		},
+		cli.StringSliceFlag{
+			Name:  "header, H",
+			Usage: "URL to hit",
+		},
 	}
 	return app
 }
 
 func Action(c *cli.Context) {
 	app := App()
+	var headers []attack.Header
 	if c.String("url") == "None" || !strings.HasPrefix(c.String("url"), "http") {
 		app.Run(os.Args)
 		return
 	}
-	trunks.Trunks(c.Int("concurrency"), c.Int("requests"), c.String("url"))
+	for _, header := range c.StringSlice("header") {
+		h := headerSplit(header)
+		if len(h) < 1 {
+			return
+		}
+		headers = append(headers, attack.Header{Key: h[1], Value: h[2]})
+	}
+	trunks.Trunks(c.Int("concurrency"), c.Int("requests"), c.String("url"), headers)
 }
 
 func main() {

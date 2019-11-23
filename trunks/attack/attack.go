@@ -11,11 +11,17 @@ import (
 	"github.com/hmarf/trunks/trunks/report"
 )
 
+type Header struct {
+	Key   string
+	Value string
+}
+
 // Request用
 type Request struct {
 	URL        string
 	Client     *http.Client
 	ResponseCH chan Response
+	Header     []Header
 }
 
 // Response用
@@ -92,6 +98,9 @@ func (r *Request) Attack(c int, requestCount int) time.Duration {
 	requestStart := time.Now()
 
 	req, _ := http.NewRequest("GET", r.URL, nil)
+	for _, h := range r.Header {
+		req.Header.Set(h.Key, h.Value)
+	}
 
 	// stashはとりあえず0意外なら何でもいい
 	stash := 10

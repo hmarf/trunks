@@ -2,9 +2,9 @@ package trunks
 
 import "github.com/hmarf/trunks/trunks/attack"
 
-func Trunks(Channel int, RequestCount int, u string) {
+func Trunks(Channel int, RequestCount int, u string, h []attack.Header) {
 	// オラオラオラオラオラオラ！！！
-	request := attack.Request{URL: u}
+	request := attack.Request{URL: u, Header: h}
 	totalTime := request.Attack(Channel, RequestCount)
 
 	// 結果表示
