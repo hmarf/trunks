@@ -117,8 +117,7 @@ func (r *Request) Attack(o Option) time.Duration {
 	ch := make(chan int, o.Concurrency)
 
 	// とりあえず一回RequestしてみてConnectできるかのテスト
-	req := r.createRequest(o)
-	resp, err := r.Client.Do(req)
+	resp, err := r.Client.Do(r.createRequest(o))
 	if err != nil {
 		fmt.Printf("\x1b[31m%v\x1b[0m\n", err)
 		os.Exit(1)
@@ -146,8 +145,7 @@ func (r *Request) Attack(o Option) time.Duration {
 			stash = degreeP
 			showDegreeProgression(time.Now().Sub(requestStart), degree, float32(o.Requests))
 		}
-		req = r.createRequest(o)
-		go r.Kikouha(&wg, &ch, req)
+		go r.Kikouha(&wg, &ch, r.createRequest(o))
 	}
 	wg.Wait()
 	totalTime := time.Now().Sub(requestStart)

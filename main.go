@@ -25,34 +25,34 @@ func App() *cli.App {
 		cli.IntFlag{
 			Name:  "concurrency, c",
 			Value: 10,
-			Usage: "Concurrency Level",
+			Usage: "[int] Concurrency Level.",
 		},
 		cli.IntFlag{
 			Name:  "requests, r",
 			Value: 100,
-			Usage: "Number of Requests",
+			Usage: "[int] Number of Requests.",
 		},
 		cli.StringFlag{
 			Name:  "method, m",
-			Value: "Get",
-			Usage: "http method",
+			Value: "GET",
+			Usage: "[string] http method.",
 		},
 		cli.StringFlag{
 			Name:  "url, u",
 			Value: "None",
-			Usage: "URL to hit",
+			Usage: "[string required] URL to hit",
 		},
 		cli.StringSliceFlag{
 			Name:  "header, H",
-			Usage: "HTTP header",
+			Usage: "[string] HTTP header",
 		},
 		cli.StringFlag{
 			Name:  "body, b",
-			Usage: "HTTP body",
+			Usage: "[string] HTTP body",
 		},
 		cli.StringFlag{
 			Name:  "output, o",
-			Usage: "Output file name",
+			Usage: "[string] File name to output results",
 		},
 	}
 	return app
