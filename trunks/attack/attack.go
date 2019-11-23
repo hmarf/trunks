@@ -41,14 +41,11 @@ type Response struct {
 }
 
 func (r *Request) createRequest(o Option) *http.Request {
-	var req *http.Request
-	var err error
-	if o.Body == "" {
-		req, err = http.NewRequest(o.Method, o.URL, nil)
-	} else {
-		req, err = http.NewRequest(o.Method, o.URL, ioutil.NopCloser(bytes.NewReader([]byte(o.Body))))
-		fmt.Println(bytes.NewReader([]byte(o.Body)))
+	req, err := http.NewRequest(o.Method, o.URL, nil)
+	if !(o.Body == "") {
+		req.Body = ioutil.NopCloser(bytes.NewReader([]byte(o.Body)))
 	}
+	req.ContentLength = int64(len([]byte(o.Body)))
 	if err != nil {
 		panic(err)
 	}
@@ -119,6 +116,7 @@ func (r *Request) Attack(o Option) time.Duration {
 	// 並行処理するスレッド数を決める
 	ch := make(chan int, o.Concurrency)
 
+	// とりあえず一回RequestしてみてConnectできるかのテスト
 	req := r.createRequest(o)
 	resp, err := r.Client.Do(req)
 	if err != nil {
@@ -148,6 +146,7 @@ func (r *Request) Attack(o Option) time.Duration {
 			stash = degreeP
 			showDegreeProgression(time.Now().Sub(requestStart), degree, float32(o.Requests))
 		}
+		req = r.createRequest(o)
 		go r.Kikouha(&wg, &ch, req)
 	}
 	wg.Wait()
