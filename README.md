@@ -22,13 +22,20 @@ COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --concurrency value, -c value  [int] Concurrency Level. (default: 10)
-   --requests value, -r value     [int] Number of Requests. (default: 100)
-   --method value, -m value       [string] http method. (default: "GET")
-   --url value, -u value          [string required] URL to hit (default: "None")
-   --header value, -H value       [string] HTTP header
-   --body value, -b value         [string] HTTP body
-   --output value, -o value       [string] File name to output results
+   --url value, -u value          [required] string
+                                   URL to hit (default: "None")
+   --concurrency value, -c value  int
+                                   Concurrency Level. (default: 10)
+   --requests value, -r value     int
+                                   Number of Requests. (default: 100)
+   --method value, -m value       string
+                                   http method. (default: "GET")
+   --header value, -H value       string
+                                   HTTP header
+   --body value, -b value         string
+                                   HTTP body
+   --output value, -o value       string
+                                   File name to output results
    --help, -h                     show help
    --version, -v                  print the version
 ```

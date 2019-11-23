@@ -1,9 +1,14 @@
 package trunks
 
-import "github.com/hmarf/trunks/trunks/attack"
+import (
+	"fmt"
 
-func Trunks(o attack.Option) { //Channel int, RequestCount int, url string, h []attack.Header, outFile string) {
+	"github.com/hmarf/trunks/trunks/attack"
+)
+
+func Trunks(o attack.Option) {
 	// オラオラオラオラオラオラ！！！
+	fmt.Println()
 	request := attack.Request{}
 	totalTime := request.Attack(o)
 

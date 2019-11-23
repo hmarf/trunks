@@ -22,37 +22,37 @@ func App() *cli.App {
 	app.Version = "0.0.1"
 	app.Author = "hmarf"
 	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "url, u",
+			Value: "None",
+			Usage: "[required] string\n	 URL to hit",
+		},
 		cli.IntFlag{
 			Name:  "concurrency, c",
 			Value: 10,
-			Usage: "[int] Concurrency Level.",
+			Usage: "int\n	 Concurrency Level.",
 		},
 		cli.IntFlag{
 			Name:  "requests, r",
 			Value: 100,
-			Usage: "[int] Number of Requests.",
+			Usage: "int\n	 Number of Requests.",
 		},
 		cli.StringFlag{
 			Name:  "method, m",
 			Value: "GET",
-			Usage: "[string] http method.",
-		},
-		cli.StringFlag{
-			Name:  "url, u",
-			Value: "None",
-			Usage: "[string required] URL to hit",
+			Usage: "string\n	 http method.",
 		},
 		cli.StringSliceFlag{
-			Name:  "header, H",
-			Usage: "[string] HTTP header",
+			Name: "header, H",
+			Usage: "string\n	 HTTP header",
 		},
 		cli.StringFlag{
-			Name:  "body, b",
-			Usage: "[string] HTTP body",
+			Name: "body, b",
+			Usage: "string\n	 HTTP body",
 		},
 		cli.StringFlag{
-			Name:  "output, o",
-			Usage: "[string] File name to output results",
+			Name: "output, o",
+			Usage: "string\n	 File name to output results",
 		},
 	}
 	return app
