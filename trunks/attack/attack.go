@@ -16,6 +16,7 @@ type Option struct {
 	Requests    int
 	Concurrency int
 	URL         string
+	Method      string
 	Header      []Header
 	OutputFile  string
 }
@@ -38,7 +39,7 @@ type Response struct {
 }
 
 func (r *Request) createRequest(o Option) *http.Request {
-	req, err := http.NewRequest("GET", o.URL, nil)
+	req, err := http.NewRequest(o.Method, o.URL, nil)
 	if err != nil {
 		panic(err)
 	}

@@ -72,6 +72,7 @@ func Action(c *cli.Context) {
 	option := attack.Option{
 		Concurrency: c.Int("concurrency"),
 		Requests:    c.Int("requests"),
+		Method:      c.String("method"),
 		URL:         c.String("url"),
 		Header:      headers,
 		OutputFile:  c.String("output")}
