@@ -33,17 +33,23 @@ func App() *cli.App {
 			Usage: "Number of Requests",
 		},
 		cli.StringFlag{
+			Name:  "method, m",
+			Value: "Get",
+			Usage: "http method",
+		},
+		cli.StringFlag{
 			Name:  "url, u",
 			Value: "None",
 			Usage: "URL to hit",
 		},
-		cli.StringFlag{
-			Name:  "output, o",
-			Usage: "Output file name",
-		},
 		cli.StringSliceFlag{
 			Name:  "header, H",
 			Usage: "HTTP header",
+		},
+
+		cli.StringFlag{
+			Name:  "output, o",
+			Usage: "Output file name",
 		},
 	}
 	return app
@@ -63,8 +69,13 @@ func Action(c *cli.Context) {
 		}
 		headers = append(headers, attack.Header{Key: h[1], Value: h[2]})
 	}
-	outputFile := c.String("output")
-	trunks.Trunks(c.Int("concurrency"), c.Int("requests"), c.String("url"), headers, outputFile)
+	option := attack.Option{
+		Concurrency: c.Int("concurrency"),
+		Requests:    c.Int("requests"),
+		URL:         c.String("url"),
+		Header:      headers,
+		OutputFile:  c.String("output")}
+	trunks.Trunks(option)
 }
 
 func main() {
