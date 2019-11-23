@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -31,7 +32,18 @@ type Response struct {
 	responseTime  time.Duration
 }
 
-func ShowDegreeProgression(t time.Duration, degree int, maxRequest float32) {
+func (r *Request) createRequest() *http.Request {
+	req, err := http.NewRequest("GET", r.URL, nil)
+	if err != nil {
+		panic(err)
+	}
+	for _, h := range r.Header {
+		req.Header.Set(h.Key, h.Value)
+	}
+	return req
+}
+
+func showDegreeProgression(t time.Duration, degree int, maxRequest float32) {
 	progression := 50
 	progressionCount := degree / (100 / progression)
 	fmt.Printf("\r[%02d:%02d:%02d] [", int(t.Hours()), int(t.Minutes())%60, int(t.Seconds())%60)
@@ -52,14 +64,12 @@ func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int, req *http.Request) 
 	rqStart := time.Now()
 	resp, err := rq.Client.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		<-*ch
 		return
 	}
 	defer resp.Body.Close()
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
 		<-*ch
 		return
 	}
@@ -94,13 +104,17 @@ func (r *Request) Attack(c int, requestCount int) time.Duration {
 	// 並行処理するスレッド数を決める
 	ch := make(chan int, c)
 
+	req := r.createRequest()
+	resp, err := r.Client.Do(req)
+	if err != nil {
+		fmt.Printf("\x1b[31m%v\x1b[0m\n", err)
+		os.Exit(1)
+	}
+	resp.Body.Close()
+	_, _ = ioutil.ReadAll(resp.Body)
+
 	// Requestを投げる時間測定
 	requestStart := time.Now()
-
-	req, _ := http.NewRequest("GET", r.URL, nil)
-	for _, h := range r.Header {
-		req.Header.Set(h.Key, h.Value)
-	}
 
 	// stashはとりあえず0意外なら何でもいい
 	stash := 10
@@ -113,13 +127,13 @@ func (r *Request) Attack(c int, requestCount int) time.Duration {
 		degreeP := degree / 5
 		if degreeP != stash {
 			stash = degreeP
-			ShowDegreeProgression(time.Now().Sub(requestStart), degree, float32(requestCount))
+			showDegreeProgression(time.Now().Sub(requestStart), degree, float32(requestCount))
 		}
 		go r.Kikouha(&wg, &ch, req)
 	}
 	wg.Wait()
 	totalTime := time.Now().Sub(requestStart)
-	ShowDegreeProgression(totalTime, 100, float32(requestCount))
+	showDegreeProgression(totalTime, 100, float32(requestCount))
 	return totalTime
 }
 
@@ -172,5 +186,6 @@ LOOP:
 	}
 	_result.SucceedRequests = i
 	_result.FailedRequests = requestCount - i
+	_result.LatecyAve /= time.Duration(requestCount)
 	return _result
 }
