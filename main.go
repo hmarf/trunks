@@ -46,7 +46,10 @@ func App() *cli.App {
 			Name:  "header, H",
 			Usage: "HTTP header",
 		},
-
+		cli.StringFlag{
+			Name:  "body, b",
+			Usage: "HTTP body",
+		},
 		cli.StringFlag{
 			Name:  "output, o",
 			Usage: "Output file name",
@@ -75,6 +78,7 @@ func Action(c *cli.Context) {
 		Method:      c.String("method"),
 		URL:         c.String("url"),
 		Header:      headers,
+		Body:        c.String("body"),
 		OutputFile:  c.String("output")}
 	trunks.Trunks(option)
 }

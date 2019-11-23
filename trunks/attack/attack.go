@@ -1,6 +1,7 @@
 package attack
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -18,6 +19,7 @@ type Option struct {
 	URL         string
 	Method      string
 	Header      []Header
+	Body        string
 	OutputFile  string
 }
 type Header struct {
@@ -39,7 +41,14 @@ type Response struct {
 }
 
 func (r *Request) createRequest(o Option) *http.Request {
-	req, err := http.NewRequest(o.Method, o.URL, nil)
+	var req *http.Request
+	var err error
+	if o.Body == "" {
+		req, err = http.NewRequest(o.Method, o.URL, nil)
+	} else {
+		req, err = http.NewRequest(o.Method, o.URL, ioutil.NopCloser(bytes.NewReader([]byte(o.Body))))
+		fmt.Println(bytes.NewReader([]byte(o.Body)))
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -116,8 +125,12 @@ func (r *Request) Attack(o Option) time.Duration {
 		fmt.Printf("\x1b[31m%v\x1b[0m\n", err)
 		os.Exit(1)
 	}
+	_, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("\x1b[31m%v\x1b[0m\n", err)
+		os.Exit(1)
+	}
 	resp.Body.Close()
-	_, _ = ioutil.ReadAll(resp.Body)
 
 	// Requestを投げる時間測定
 	requestStart := time.Now()
