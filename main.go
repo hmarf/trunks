@@ -37,9 +37,13 @@ func App() *cli.App {
 			Value: "None",
 			Usage: "URL to hit",
 		},
+		cli.StringFlag{
+			Name:  "output, o",
+			Usage: "Output file name",
+		},
 		cli.StringSliceFlag{
 			Name:  "header, H",
-			Usage: "URL to hit",
+			Usage: "HTTP header",
 		},
 	}
 	return app
@@ -59,7 +63,8 @@ func Action(c *cli.Context) {
 		}
 		headers = append(headers, attack.Header{Key: h[1], Value: h[2]})
 	}
-	trunks.Trunks(c.Int("concurrency"), c.Int("requests"), c.String("url"), headers)
+	outputFile := c.String("output")
+	trunks.Trunks(c.Int("concurrency"), c.Int("requests"), c.String("url"), headers, outputFile)
 }
 
 func main() {

@@ -11,8 +11,9 @@ import (
 
 // ベンチマークの結果を計算し収納する場所
 type ResultBenchMark struct {
-	ConcurrencyLevel  int           `json:"concurrency_level"`   //
-	TotalRequests     int           `json:"total_requests"`      //
+	SaveFile          string        // セーブするファイル名
+	ConcurrencyLevel  int           `json:"concurrency_level"`   // 同時実行数
+	TotalRequests     int           `json:"total_requests"`      // Requestを投げる総数
 	SucceedRequests   int           `json:"succeed"`             // 通信に成功したRequest
 	FailedRequests    int           `json:"failed"`              // 何らかの理由で通信に失敗したRequest
 	RequestsSec       int           `json:"requests_sec"`        // 一秒間にアクセスできたRequestの総数
@@ -61,6 +62,9 @@ func convertStringFromDuration(r ResultBenchMark) ResultBenchMarkForJson {
 }
 
 func (r *ResultBenchMark) WriteResultFile() {
+	if r.SaveFile == "" {
+		return
+	}
 	resultJson := convertStringFromDuration(*r)
 	jsonBytes, err := json.Marshal(resultJson)
 	if err != nil {
@@ -69,7 +73,7 @@ func (r *ResultBenchMark) WriteResultFile() {
 	}
 	out := new(bytes.Buffer)
 	json.Indent(out, jsonBytes, "", "    ")
-	file, err := os.Create("./output.json")
+	file, err := os.Create(r.SaveFile)
 	if err != nil {
 		log.Println("ベンチマークの結果の保存に失敗しました(fileを作成できませんでした。)")
 		return
