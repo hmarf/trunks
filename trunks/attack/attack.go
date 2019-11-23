@@ -12,6 +12,13 @@ import (
 	"github.com/hmarf/trunks/trunks/report"
 )
 
+type Option struct {
+	Requests    int
+	Concurrency int
+	URL         string
+	Header      []Header
+	OutputFile  string
+}
 type Header struct {
 	Key   string
 	Value string
@@ -19,10 +26,8 @@ type Header struct {
 
 // Request用
 type Request struct {
-	URL        string
 	Client     *http.Client
 	ResponseCH chan Response
-	Header     []Header
 }
 
 // Response用
@@ -32,12 +37,12 @@ type Response struct {
 	responseTime  time.Duration
 }
 
-func (r *Request) createRequest() *http.Request {
-	req, err := http.NewRequest("GET", r.URL, nil)
+func (r *Request) createRequest(o Option) *http.Request {
+	req, err := http.NewRequest("GET", o.URL, nil)
 	if err != nil {
 		panic(err)
 	}
-	for _, h := range r.Header {
+	for _, h := range o.Header {
 		req.Header.Set(h.Key, h.Value)
 	}
 	return req
@@ -81,7 +86,7 @@ func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int, req *http.Request) 
 	<-*ch
 }
 
-func (r *Request) Attack(c int, requestCount int) time.Duration {
+func (r *Request) Attack(o Option) time.Duration {
 
 	r.Client = &http.Client{
 		Transport: &http.Transport{
@@ -91,7 +96,7 @@ func (r *Request) Attack(c int, requestCount int) time.Duration {
 				DualStack: true,
 			}).DialContext,
 			MaxIdleConns:          0, // DefaultTransport: 100, 0にすると無制限。
-			MaxIdleConnsPerHost:   requestCount,
+			MaxIdleConnsPerHost:   o.Requests,
 			IdleConnTimeout:       90 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ResponseHeaderTimeout: 10 * time.Second,
@@ -99,12 +104,12 @@ func (r *Request) Attack(c int, requestCount int) time.Duration {
 		},
 		Timeout: 60 * time.Second,
 	}
-	r.ResponseCH = make(chan Response, requestCount)
+	r.ResponseCH = make(chan Response, o.Requests)
 
 	// 並行処理するスレッド数を決める
-	ch := make(chan int, c)
+	ch := make(chan int, o.Concurrency)
 
-	req := r.createRequest()
+	req := r.createRequest(o)
 	resp, err := r.Client.Do(req)
 	if err != nil {
 		fmt.Printf("\x1b[31m%v\x1b[0m\n", err)
@@ -120,20 +125,20 @@ func (r *Request) Attack(c int, requestCount int) time.Duration {
 	stash := 10
 	// ひたすらRequestを投げる
 	wg := sync.WaitGroup{}
-	for i := 0; i < requestCount; i++ {
+	for i := 0; i < o.Requests; i++ {
 		ch <- 1
 		wg.Add(1)
-		degree := int((float32(i) / float32(requestCount)) * 100)
+		degree := int((float32(i) / float32(o.Requests)) * 100)
 		degreeP := degree / 5
 		if degreeP != stash {
 			stash = degreeP
-			showDegreeProgression(time.Now().Sub(requestStart), degree, float32(requestCount))
+			showDegreeProgression(time.Now().Sub(requestStart), degree, float32(o.Requests))
 		}
 		go r.Kikouha(&wg, &ch, req)
 	}
 	wg.Wait()
 	totalTime := time.Now().Sub(requestStart)
-	showDegreeProgression(totalTime, 100, float32(requestCount))
+	showDegreeProgression(totalTime, 100, float32(o.Requests))
 	return totalTime
 }
 

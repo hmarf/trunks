@@ -11,7 +11,6 @@ import (
 
 // ベンチマークの結果を計算し収納する場所
 type ResultBenchMark struct {
-	SaveFile          string        // セーブするファイル名
 	ConcurrencyLevel  int           `json:"concurrency_level"`   // 同時実行数
 	TotalRequests     int           `json:"total_requests"`      // Requestを投げる総数
 	SucceedRequests   int           `json:"succeed"`             // 通信に成功したRequest
@@ -40,8 +39,10 @@ type ResultBenchMarkForJson struct {
 	LatecyAve         string      `json:"latecy_ave"`          // Responseが来る待機時間の平均
 }
 
-func (r *ResultBenchMark) ShowResult() {
-	r.WriteResultFile()
+func (r *ResultBenchMark) ShowResult(outFile string) {
+	if !(outFile == "") {
+		r.WriteResultFile(outFile)
+	}
 	r.ShowResultConsole()
 }
 
@@ -61,10 +62,7 @@ func convertStringFromDuration(r ResultBenchMark) ResultBenchMarkForJson {
 	}
 }
 
-func (r *ResultBenchMark) WriteResultFile() {
-	if r.SaveFile == "" {
-		return
-	}
+func (r *ResultBenchMark) WriteResultFile(outFile string) {
 	resultJson := convertStringFromDuration(*r)
 	jsonBytes, err := json.Marshal(resultJson)
 	if err != nil {
@@ -73,7 +71,7 @@ func (r *ResultBenchMark) WriteResultFile() {
 	}
 	out := new(bytes.Buffer)
 	json.Indent(out, jsonBytes, "", "    ")
-	file, err := os.Create(r.SaveFile)
+	file, err := os.Create(outFile)
 	if err != nil {
 		log.Println("ベンチマークの結果の保存に失敗しました(fileを作成できませんでした。)")
 		return
