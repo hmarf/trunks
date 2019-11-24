@@ -4,6 +4,9 @@
 ## Overview
 Trunks is a simple command line tool for HTTP load testing. 
 
+## Demo
+![demo](https://github.com/hmarf/trunks/blob/master/img/trunks.gif)
+
 ## Usage
 ```
 NAME:
