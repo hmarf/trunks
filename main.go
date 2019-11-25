@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/hmarf/trunks/trunks"
-	"github.com/hmarf/trunks/trunks/attack"
+	"github.com/hmarf/trunks/benche"
+	"github.com/hmarf/trunks/benche/attack"
 	"github.com/urfave/cli"
 )
 
@@ -80,7 +80,7 @@ func Action(c *cli.Context) {
 		Header:      headers,
 		Body:        c.String("body"),
 		OutputFile:  c.String("output")}
-	trunks.Trunks(option)
+	benche.Trunks(option)
 }
 
 func main() {
