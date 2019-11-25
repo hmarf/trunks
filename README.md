@@ -43,6 +43,17 @@ GLOBAL OPTIONS:
    --version, -v                  print the version
 ```
 
+# Install
+```
+brew tap hmarf/trunks
+brew install trunks
+```
+
+or 
+```
+go get -u github.com/hmarf/trunks
+```
+
 # Reference
 ### Benchmark
 - https://github.com/tsenart/vegeta
