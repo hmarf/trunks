@@ -1,4 +1,4 @@
-package attack_test
+package attack
 
 import (
 	"fmt"
@@ -8,11 +8,9 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/hmarf/trunks/benche/attack"
 )
 
-func TestKikouha(t *testing.T) {
+func TestKikouhaSuccess(t *testing.T) {
 
 	// test server
 	ts := httptest.NewServer(http.HandlerFunc(
@@ -26,7 +24,7 @@ func TestKikouha(t *testing.T) {
 
 	RequestCount := 1000
 	Concurrency := 2
-	r := attack.Request{}
+	r := Request{}
 	r.Client = &http.Client{
 		Transport: &http.Transport{
 			DialContext: (&net.Dialer{
@@ -43,9 +41,36 @@ func TestKikouha(t *testing.T) {
 		},
 		Timeout: 60 * time.Second,
 	}
-	r.ResponseCH = make(chan attack.Response, RequestCount)
+	r.ResponseCH = make(chan Response, RequestCount)
 	// 並行処理するスレッド数を決める
 	ch := make(chan int, Concurrency)
 	wg := sync.WaitGroup{}
-	r.Kikouha(&wg, &ch)
+	options := []Option{
+		{
+			Requests:    1,
+			Concurrency: 1,
+			URL:         ts.URL,
+			Method:      "GET",
+			Header:      []Header{},
+			Body:        "",
+			OutputFile:  "",
+		},
+		{
+			Requests:    1,
+			Concurrency: 1,
+			URL:         ts.URL,
+			Method:      "POST",
+			Header:      []Header{},
+			Body:        "",
+			OutputFile:  "",
+		},
+	}
+	fmt.Println("aa")
+	for _, op := range options {
+		ch <- 1
+		wg.Add(1)
+		req := r.createRequest(op)
+		r.Kikouha(&wg, &ch, req)
+	}
+	wg.Wait()
 }
