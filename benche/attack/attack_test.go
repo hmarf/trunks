@@ -41,6 +41,7 @@ func TestKikouha(t *testing.T) {
 		},
 		Timeout: 60 * time.Second,
 	}
+
 	r.ResponseSuccess = make(chan Response, RequestCount)
 	r.ResponseFail = make(chan int, RequestCount)
 	// 並行処理するスレッド数を決める
@@ -89,10 +90,11 @@ func TestKikouha(t *testing.T) {
 			Requests:    1,
 			Concurrency: 1,
 			URL:         ts.URL,
-			Method:      "POST",
-			Header:      []Header{},
-			Body:        "",
-			OutputFile:  "",
+
+			Method:     "POST",
+			Header:     []Header{},
+			Body:       "",
+			OutputFile: "",
 		},
 		{
 			Requests:    1,
@@ -148,4 +150,5 @@ LOOP:
 		t.Error("\nExpected number of successes: ", len(options),
 			"\nActual success number: ", success)
 	}
+
 }
