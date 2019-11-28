@@ -55,6 +55,7 @@ go get -u github.com/hmarf/trunks
 ```
 
 # Example
+### command option
 - 10,000 requests are sent to 127.0.0.1:8080 in 10 parallels
 ```
 trunks -c 10 -r 10000 -u "http://localhost:8080"
@@ -68,6 +69,29 @@ trunks -c 10 -r 10000 -u "http://localhost:8080" -H "Content-Type:application/js
 - Specify a file to save the results
 ```
 trunks -c 10 -r 10000 -u "http://localhost:8080" -o "output-file.json"
+```
+
+### output
+```
+$ trunks -c 10 -r 10000 -u "http://localhost:8080"
+
+[00:00:01] [##################################################] 100%
+
+Concurrency Level:   10
+Total Requests:      10000
+Succeeded requests:  10000
+Failed requests:     0
+Requests/sec:        0
+Total data received: 120000 bytes
+
+Status code:
+   [200] 10000 responses
+
+Latency:
+   total: 1.238740417s
+   max:   49.110501ms
+   min:   161.2µs
+   ave:   1.215923ms
 ```
 
 # Reference
