@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func TestKikouhaSuccess(t *testing.T) {
+func TestKikouha(t *testing.T) {
 
 	// test server
 	ts := httptest.NewServer(http.HandlerFunc(
@@ -41,9 +41,11 @@ func TestKikouhaSuccess(t *testing.T) {
 		},
 		Timeout: 60 * time.Second,
 	}
-	r.ResponseCH = make(chan Response, RequestCount)
+	r.ResponseSuccess = make(chan Response, RequestCount)
+	r.ResponseFail = make(chan int, RequestCount)
 	// 並行処理するスレッド数を決める
 	ch := make(chan int, Concurrency)
+
 	wg := sync.WaitGroup{}
 	options := []Option{
 		{
@@ -59,13 +61,69 @@ func TestKikouhaSuccess(t *testing.T) {
 			Requests:    1,
 			Concurrency: 1,
 			URL:         ts.URL,
+			Method:      "GET",
+			Header: []Header{
+				{
+					Key:   "Content-Type",
+					Value: "application/json",
+				},
+			},
+			Body:       "",
+			OutputFile: "",
+		},
+		{
+			Requests:    1,
+			Concurrency: 1,
+			URL:         ts.URL,
+			Method:      "GET",
+			Header: []Header{
+				{
+					Key:   "Content-Type",
+					Value: "application/json",
+				},
+			},
+			Body:       `{"message":"hello world!"}`,
+			OutputFile: "",
+		},
+		{
+			Requests:    1,
+			Concurrency: 1,
+			URL:         ts.URL,
 			Method:      "POST",
 			Header:      []Header{},
 			Body:        "",
 			OutputFile:  "",
 		},
+		{
+			Requests:    1,
+			Concurrency: 1,
+			URL:         ts.URL,
+			Method:      "POST",
+			Header: []Header{
+				{
+					Key:   "Content-Type",
+					Value: "application/json",
+				},
+			},
+			Body:       "",
+			OutputFile: "",
+		},
+		{
+			Requests:    1,
+			Concurrency: 1,
+			URL:         ts.URL,
+			Method:      "POST",
+			Header: []Header{
+				{
+					Key:   "Content-Type",
+					Value: "application/json",
+				},
+			},
+			Body:       `{"message":"hello world!"}`,
+			OutputFile: "",
+		},
 	}
-	fmt.Println("aa")
+
 	for _, op := range options {
 		ch <- 1
 		wg.Add(1)
@@ -73,4 +131,21 @@ func TestKikouhaSuccess(t *testing.T) {
 		r.Kikouha(&wg, &ch, req)
 	}
 	wg.Wait()
+
+	success := 0
+LOOP:
+	for {
+		select {
+		case _ = <-r.ResponseSuccess:
+			success++
+		case _ = <-r.ResponseFail:
+		default:
+			break LOOP
+		}
+	}
+
+	if len(options) != success {
+		t.Error("\nExpected number of successes: ", len(options),
+			"\nActual success number: ", success)
+	}
 }
