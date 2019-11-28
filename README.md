@@ -1,5 +1,5 @@
 # Trunks
-<img src="https://github.com/hmarf/trunks/blob/master/img/trunks.jpg?raw=true" width="500px">
+<img src="https://github.com/hmarf/trunks/blob/master/img/trunks.jpg?raw=true" width="400px">
 
 ## Overview
 Trunks is a simple command line tool for HTTP load testing. 
