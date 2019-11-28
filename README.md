@@ -54,6 +54,22 @@ or
 go get -u github.com/hmarf/trunks
 ```
 
+# Example
+- 10,000 requests are sent to 127.0.0.1:8080 in 10 parallels
+```
+trunks -c 10 -r 10000 -u "http://localhost:8080"
+```
+
+- 10,000 requests with header and body set are sent to 127.0.0.1:8080 in 10 parallels 
+```
+trunks -c 10 -r 10000 -u "http://localhost:8080" -H "Content-Type:application/json" -H Accept: "application/json" -b "{"message":"Welcome to underground"}"
+```
+
+- Specify a file to save the results
+```
+trunks -c 10 -r 10000 -u "http://localhost:8080" -o "output-file.json"
+```
+
 # Reference
 ### Benchmark
 - https://github.com/tsenart/vegeta
