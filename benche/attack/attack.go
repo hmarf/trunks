@@ -29,8 +29,9 @@ type Header struct {
 
 // Request用
 type Request struct {
-	Client     *http.Client
-	ResponseCH chan Response
+	Client          *http.Client
+	ResponseSuccess chan Response
+	ResponseFail    chan int
 }
 
 // Response用
@@ -76,16 +77,18 @@ func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int, req *http.Request) 
 	rqStart := time.Now()
 	resp, err := rq.Client.Do(req)
 	if err != nil {
+		rq.ResponseFail <- 1
 		<-*ch
 		return
 	}
 	defer resp.Body.Close()
 	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
+		rq.ResponseFail <- 2
 		<-*ch
 		return
 	}
-	rq.ResponseCH <- Response{
+	rq.ResponseSuccess <- Response{
 		statusCode:    resp.StatusCode,
 		contextLength: resp.ContentLength,
 		responseTime:  time.Now().Sub(rqStart),
@@ -111,7 +114,8 @@ func (r *Request) Attack(o Option) time.Duration {
 		},
 		Timeout: 60 * time.Second,
 	}
-	r.ResponseCH = make(chan Response, o.Requests)
+	r.ResponseSuccess = make(chan Response, o.Requests)
+	r.ResponseFail = make(chan int, o.Requests)
 
 	// 並行処理するスレッド数を決める
 	ch := make(chan int, o.Concurrency)
@@ -173,11 +177,12 @@ func (rq *Request) GetResults(totalTime time.Duration, requestCount int, channel
 	_result.TotalRequests = requestCount
 	_result.LatecyTotal = totalTime
 	_result.LatecyMin = totalTime
-	i := 0
+	success := 0
+	failed := 0
 LOOP:
-	for ; ; i++ {
+	for ; ; success++ {
 		select {
-		case data := <-rq.ResponseCH:
+		case data := <-rq.ResponseSuccess:
 			_result.LatecyAve += data.responseTime
 			// 待機時間　max, min
 			if data.responseTime > _result.LatecyMax {
@@ -196,12 +201,14 @@ LOOP:
 			}
 			// ContextLength
 			_result.TotalDataReceived += data.contextLength
+		case _ = <-rq.ResponseFail:
+			failed++
 		default:
 			break LOOP
 		}
 	}
-	_result.SucceedRequests = i
-	_result.FailedRequests = requestCount - i
+	_result.SucceedRequests = success
+	_result.FailedRequests = failed
 	_result.LatecyAve /= time.Duration(requestCount)
 	return _result
 }
