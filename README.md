@@ -43,7 +43,7 @@ GLOBAL OPTIONS:
    --version, -v                  print the version
 ```
 
-# Install
+## Install
 ```
 brew tap hmarf/trunks
 brew install trunks
@@ -54,8 +54,9 @@ or
 go get -u github.com/hmarf/trunks
 ```
 
-# Example
-### command option
+## Example
+### input
+#### command option
 - 10,000 requests are sent to 127.0.0.1:8080 in 10 parallels
 ```
 trunks -c 10 -r 10000 -u "http://localhost:8080"
