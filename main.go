@@ -53,6 +53,10 @@ func App() *cli.App {
 			Name: "output, o",
 			Usage: "string\n	 File name to output results",
 		},
+		cli.BoolFlag{
+			Name:  "http2",
+			Usage: "Send HTTP/2 requests when supported by the server (default false)",
+		},
 	}
 	return app
 }
@@ -78,7 +82,9 @@ func Action(c *cli.Context) {
 		URL:         c.String("url"),
 		Header:      headers,
 		Body:        c.String("body"),
-		OutputFile:  c.String("output")}
+		OutputFile:  c.String("output"),
+		Http2:       c.Bool("http2"),
+	}
 	benche.Trunks(option)
 }
 

@@ -23,6 +23,7 @@ type Option struct {
 	Header      []Header
 	Body        string
 	OutputFile  string
+	Http2       bool
 }
 type Header struct {
 	Key   string
@@ -112,7 +113,7 @@ func (r *Request) Attack(o Option) time.Duration {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	if false {
+	if o.Http2 {
 		if err := http2.ConfigureTransport(transport); err != nil {
 			log.Panicf("Failed to configure h2 transport: %s", err)
 		}
