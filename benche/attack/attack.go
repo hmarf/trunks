@@ -2,15 +2,17 @@ package attack
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
-	"net"
+	"log"
 	"net/http"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/hmarf/trunks/benche/report"
+	"golang.org/x/net/http2"
 )
 
 type Option struct {
@@ -21,6 +23,7 @@ type Option struct {
 	Header      []Header
 	Body        string
 	OutputFile  string
+	Http2       bool
 }
 type Header struct {
 	Key   string
@@ -98,22 +101,29 @@ func (rq *Request) Kikouha(wg *sync.WaitGroup, ch *chan int, req *http.Request) 
 
 func (r *Request) Attack(o Option) time.Duration {
 
-	r.Client = &http.Client{
-		Transport: &http.Transport{
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			MaxIdleConns:          0, // DefaultTransport: 100, 0にすると無制限。
-			MaxIdleConnsPerHost:   o.Requests,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ResponseHeaderTimeout: 10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
 		},
-		Timeout: 60 * time.Second,
+		MaxIdleConns:          0, // DefaultTransport: 100, 0にすると無制限。
+		MaxIdleConnsPerHost:   o.Requests,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ResponseHeaderTimeout: 10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
 	}
+
+	if o.Http2 {
+		if err := http2.ConfigureTransport(transport); err != nil {
+			log.Panicf("Failed to configure h2 transport: %s", err)
+		}
+	}
+
+	r.Client = &http.Client{
+		Transport: transport,
+		Timeout:   60 * time.Second,
+	}
+
 	r.ResponseSuccess = make(chan Response, o.Requests)
 	r.ResponseFail = make(chan int, o.Requests)
 
@@ -153,6 +163,7 @@ func (r *Request) Attack(o Option) time.Duration {
 	}
 	wg.Wait()
 	totalTime := time.Now().Sub(requestStart)
+	r.Client.CloseIdleConnections()
 	showDegreeProgression(totalTime, 100, float32(o.Requests))
 	return totalTime
 }

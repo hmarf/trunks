@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"regexp"
-	"strings"
 
 	"github.com/hmarf/trunks/benche"
 	"github.com/hmarf/trunks/benche/attack"
@@ -54,6 +53,10 @@ func App() *cli.App {
 			Name: "output, o",
 			Usage: "string\n	 File name to output results",
 		},
+		cli.BoolFlag{
+			Name:  "http2",
+			Usage: "Send HTTP/2 requests when supported by the server (default false)",
+		},
 	}
 	return app
 }
@@ -61,7 +64,7 @@ func App() *cli.App {
 func Action(c *cli.Context) {
 	app := App()
 	var headers []attack.Header
-	if c.String("url") == "None" || !strings.HasPrefix(c.String("url"), "http") {
+	if c.String("url") == "None" {
 		app.Run(os.Args)
 		return
 	}
@@ -79,7 +82,9 @@ func Action(c *cli.Context) {
 		URL:         c.String("url"),
 		Header:      headers,
 		Body:        c.String("body"),
-		OutputFile:  c.String("output")}
+		OutputFile:  c.String("output"),
+		Http2:       c.Bool("http2"),
+	}
 	benche.Trunks(option)
 }
 
