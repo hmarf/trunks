@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"regexp"
-	"strings"
 
 	"github.com/hmarf/trunks/benche"
 	"github.com/hmarf/trunks/benche/attack"
@@ -61,7 +60,7 @@ func App() *cli.App {
 func Action(c *cli.Context) {
 	app := App()
 	var headers []attack.Header
-	if c.String("url") == "None" || !strings.HasPrefix(c.String("url"), "http") {
+	if c.String("url") == "None" {
 		app.Run(os.Args)
 		return
 	}
