@@ -18,7 +18,7 @@ func App() *cli.App {
 	app := cli.NewApp()
 	app.Name = "trunks"
 	app.Usage = "Trunks is a simple command line tool for HTTP load testing."
-	app.Version = "0.0.1"
+	app.Version = "0.1.2"
 	app.Author = "hmarf"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
