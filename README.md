@@ -2,12 +2,14 @@
 <img src="https://github.com/hmarf/trunks/blob/master/img/trunks.jpg?raw=true" width="400px">
 
 ## Overview
-Trunks is a simple command line tool for HTTP load testing. 
+Trunks is a simple command line tool for HTTP load testing.   
+Great Father: https://github.com/tsenart/vegeta
 
 ## Demo
 ![demo](https://github.com/hmarf/trunks/blob/master/img/trunks.gif)
 
 ## Usage
+
 ```
 NAME:
    trunks - Trunks is a simple command line tool for HTTP load testing.
@@ -16,7 +18,7 @@ USAGE:
    main [global options] command [command options] [arguments...]
 
 VERSION:
-   0.0.1
+   0.1.2
 
 AUTHOR:
    hmarf
@@ -39,6 +41,7 @@ GLOBAL OPTIONS:
                                    HTTP body
    --output value, -o value       string
                                    File name to output results
+   --http2                        Send HTTP/2 requests when supported by the server (default false)
    --help, -h                     show help
    --version, -v                  print the version
 ```
